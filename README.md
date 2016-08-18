@@ -14,6 +14,9 @@ But also it has things that are not done yet:
 * No HTTPS support (but can be implemented using NGINX)
 
 ## Code examples
+
+[Sample project](https://github.com/babobka/VSJWSSamples) 
+
 ### How to run a server
 
 ```java

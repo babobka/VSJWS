@@ -12,8 +12,6 @@ import ru.babobka.vsjws.webcontroller.StaticResourcesController;
 import ru.babobka.vsjws.webcontroller.WebController;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Map;
 import java.util.logging.Level;
@@ -24,8 +22,6 @@ import java.util.logging.Level;
 public class SocketProcessorRunnable implements Runnable {
 
 	private final Socket s;
-	private final InputStream is;
-	private final OutputStream os;
 	private final HttpSession httpSession;
 	private final Map<String, WebController> controllerMap;
 	private final NodeLogger logger;
@@ -33,12 +29,10 @@ public class SocketProcessorRunnable implements Runnable {
 	private final String webContentFolder;
 
 	public SocketProcessorRunnable(Socket s,
-			Map<String, WebController> controllerMap,
-			HttpSession httpSession, NodeLogger logger, String webContentFolder)
-			throws IOException {
+			Map<String, WebController> controllerMap, HttpSession httpSession,
+			NodeLogger logger, String webContentFolder) throws IOException {
 		this.s = s;
-		this.is = s.getInputStream();
-		this.os = s.getOutputStream();
+
 		this.httpSession = httpSession;
 		this.controllerMap = controllerMap;
 		this.logger = logger;
@@ -52,7 +46,8 @@ public class SocketProcessorRunnable implements Runnable {
 		HttpResponse response = HttpResponse.NOT_FOUND_RESPONSE;
 		boolean noContent = false;
 		try {
-			HttpRequest request = new HttpRequest(s.getInetAddress(),is, httpSession);
+			HttpRequest request = new HttpRequest(s.getInetAddress(),
+					s.getInputStream(), httpSession);
 			if (request.getMethod() == null) {
 				return;
 			}
@@ -87,25 +82,13 @@ public class SocketProcessorRunnable implements Runnable {
 					ContentType.PLAIN);
 		} finally {
 			try {
-				HttpUtil.writeResponse(os, response, noContent);
+				HttpUtil.writeResponse(s.getOutputStream(), response, noContent);
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
 			try {
 				if (s != null)
 					s.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			try {
-				if (os != null)
-					os.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			try {
-				if (is != null)
-					is.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
