@@ -16,7 +16,6 @@ public class HttpSession {
 
 
 	public HttpSession(int seconds) {
-
 		expiringMap = ExpiringMap.builder()
 				.expirationPolicy(ExpiringMap.ExpirationPolicy.CREATED)
 				.expiration(seconds, TimeUnit.SECONDS).build();

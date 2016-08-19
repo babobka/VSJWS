@@ -13,9 +13,15 @@ But also it has things that are not done yet:
 * No file uploading support
 * No HTTPS support (but can be implemented using NGINX)
 
+
+## Code structure
+
+The main class is ru.babobka.vsjws.webserver.WebServer. It has a run() method to run a server. There is a loop inside that waits a socket to handle. Then, the socket goes to SocketProcessorRunnable.
+SocketProcessorRunnable determines what web controller must process a given request using its URL and HTTP method.
+
 ## Code examples
 
-[Sample project](https://github.com/babobka/VSJWSSamples) 
+### [Sample project](https://github.com/babobka/VSJWSSamples) 
 
 ### How to run a server
 
@@ -24,15 +30,18 @@ But also it has things that are not done yet:
 
 	private static final int SESSION_TIMEOUT_SECS = 15 * 60;
 
-	public static final String WEB_CONTENT_FOLDER = "web-content";
+	private static final String WEB_CONTENT_FOLDER = "web-content";
+
+	private static final String SERVER_NAME = "Sample server";
+
+	private static final String LOG_FOLDER = "server_log";
 
 	public static void main(String[] args) throws IOException {
-		WebServer webServer = new WebServer("rest server", PORT, false,
-				SESSION_TIMEOUT_SECS, WEB_CONTENT_FOLDER, "rest_log", null);	
-		//Adding controllers for a specified URLs			
+		WebServer webServer = new WebServer(SERVER_NAME, PORT,
+				SESSION_TIMEOUT_SECS, WEB_CONTENT_FOLDER, LOG_FOLDER, null);
+		// Adding controllers for a specified URLs
 		webServer.addController("/json", new JsonTestController());
 		webServer.addController("/xml", new XmlTestController());
-		webServer.addController("/encoding", new EncodingTestController());
 		webServer.addController("/heavy", new HeavyRequestController());
 		webServer.addController("/error", new InternalErrorController());
 		webServer.addController("/session", new SessionTestController());
@@ -42,6 +51,7 @@ But also it has things that are not done yet:
 		webServer.addController("/", new MainPageController());
 		webServer.run();
 	}
+
 ```
 
 ### How to code a web controller
@@ -91,13 +101,15 @@ public class AuthWebFilter implements WebFilter {
 }
 ```
 
-In order to run a web filter, you need to add it to given web controller:
+In order to run a web filter, you need to add it to a given web controller:
 ```java
 webServer.addController("/", new MainPageController().addWebFilter(new AuthWebFilter()));
 ```
 There may be more filters. You can easily add a new one like this:
 
 ```java
-webServer.addController("/", new MainPageController().addWebFilter(new AuthWebFilter()).addWebFilter(new AnotherWebFilter()));
+webServer.addController("/", new MainPageController().
+								addWebFilter(new AuthWebFilter()).
+										addWebFilter(new AnotherWebFilter()));
 ```
 Filters will be executed one by one in a queue style.

@@ -2,6 +2,7 @@ package ru.babobka.vsjws.webcontroller;
 
 import java.io.File;
 import java.io.IOException;
+
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 
@@ -26,10 +27,5 @@ public class StaticResourcesController extends WebController {
 			return HttpResponse.NOT_FOUND_RESPONSE;
 		}
 	}
-
-	@Override
-	public HttpResponse onHead(HttpRequest request) throws IOException {
-		return onGet(request);
-	}
-
+	
 }

@@ -93,7 +93,7 @@ public class HttpRequest {
 
 	}
 
-	public HashMap<String, String> getCookies() {
+	public Map<String, String> getCookies() {
 		return cookies;
 	}
 
@@ -105,7 +105,7 @@ public class HttpRequest {
 		return headers.get(key);
 	}
 
-	public HashMap<String, String> getUrlParams() {
+	public Map<String, String> getUrlParams() {
 		return urlParams;
 	}
 

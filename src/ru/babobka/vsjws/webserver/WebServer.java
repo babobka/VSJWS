@@ -1,3 +1,4 @@
+package ru.babobka.vsjws.webserver;
 
 import ru.babobka.nodeLogger.NodeLogger;
 import ru.babobka.vsjws.listener.OnServerStartListener;
@@ -180,10 +181,6 @@ public class WebServer {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
-		} finally {
-			if (threadPool != null) {
-				threadPool.shutdown();
-			}
 		}
 	}
 
