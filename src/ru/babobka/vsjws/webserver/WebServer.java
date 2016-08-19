@@ -1,6 +1,7 @@
 package ru.babobka.vsjws.webserver;
 
 import ru.babobka.nodeLogger.NodeLogger;
+import ru.babobka.vsjws.constant.RegularExpressions;
 import ru.babobka.vsjws.listener.OnServerStartListener;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
@@ -21,8 +22,6 @@ import java.util.logging.Level;
  * Created by dolgopolov.a on 30.12.15.
  */
 public class WebServer {
-
-	private static final String FILE_NAME_PATTERN = "^[A-Za-z0-9 _]*[A-Za-z0-9][A-Za-z0-9 _]*$";
 
 	public final Map<String, WebController> controllerHashMap = new HashMap<>();
 
@@ -71,7 +70,7 @@ public class WebServer {
 		}
 		if (name == null) {
 			throw new IllegalArgumentException("Web server name is null");
-		} else if (!name.matches(FILE_NAME_PATTERN)) {
+		} else if (!name.matches(RegularExpressions.FILE_NAME_PATTERN)) {
 			throw new IllegalArgumentException(
 					"Web server name must contain letters,numbers and spaces only");
 		}
