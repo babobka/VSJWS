@@ -53,14 +53,15 @@ public class WebServer {
 
 	private final int port;
 
-	public WebServer(String name, int port, String webContentFolder, String logFolder) throws IOException {
-		this(name, port,  DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder,
+	public WebServer(String name, int port, String webContentFolder,
+			String logFolder) throws IOException {
+		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder,
 				logFolder, null);
 	}
 
-	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String webContentFolder,
-			String logFolder, OnServerStartListener onServerStartListener)
-			throws IOException {
+	public WebServer(String name, int port, Integer sessionTimeOutSeconds,
+			String webContentFolder, String logFolder,
+			OnServerStartListener onServerStartListener) throws IOException {
 		if (port < 0 || port > Short.MAX_VALUE) {
 			throw new IllegalArgumentException(
 					"Port must be in range [0;65536)");
@@ -109,7 +110,11 @@ public class WebServer {
 	}
 
 	public void addController(String uri, WebController webController) {
-		controllerHashMap.put(uri, webController);
+		if (uri.startsWith("/")) {
+			controllerHashMap.put(uri, webController);
+		} else {
+			controllerHashMap.put("/" + uri, webController);
+		}
 	}
 
 	public String getWebContentFolder() {

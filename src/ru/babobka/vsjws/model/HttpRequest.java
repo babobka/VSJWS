@@ -12,7 +12,6 @@ import java.util.Map;
  */
 public class HttpRequest {
 
-	
 	private static final String CONTENT_LENGTH = "Content-Length";
 
 	public static final String SESSION_ID = "X-Session-Id";
@@ -25,13 +24,13 @@ public class HttpRequest {
 
 	private final String content;
 
-	private final HashMap<String, String> params = new HashMap<>();
+	private final Map<String, String> params = new HashMap<>();
 
-	private final HashMap<String, String> urlParams = new HashMap<>();
+	private final Map<String, String> urlParams = new HashMap<>();
 
-	private final HashMap<String, String> cookies = new HashMap<>();
+	private final Map<String, String> cookies = new HashMap<>();
 
-	private final HashMap<String, String> headers = new HashMap<>();
+	private final Map<String, String> headers = new HashMap<>();
 
 	private final HttpSession httpSession;
 
@@ -84,7 +83,11 @@ public class HttpRequest {
 	}
 
 	public String getParam(String key) {
-		return params.get(key);
+		String param = params.get(key);
+		if (param != null) {
+			return param;
+		}
+		return "";
 	}
 
 	public Map<String, Serializable> getSession() {
@@ -98,11 +101,19 @@ public class HttpRequest {
 	}
 
 	public String getUrlParam(String key) {
-		return urlParams.get(key);
+		String param = urlParams.get(key);
+		if (param != null) {
+			return param;
+		}
+		return "";
 	}
 
 	public String getHeader(String key) {
-		return headers.get(key);
+		String header = headers.get(key);
+		if (header != null) {
+			return header;
+		}
+		return "";
 	}
 
 	public Map<String, String> getUrlParams() {
@@ -146,8 +157,6 @@ public class HttpRequest {
 		return result;
 	}
 
-	
-	
 	public InetAddress getAddress() {
 		return address;
 	}

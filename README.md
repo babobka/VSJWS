@@ -16,7 +16,7 @@ But also it has things that are not done yet:
 
 ## Code structure
 
-The main class is ru.babobka.vsjws.webserver.WebServer. It has a run() method to run a server. There is a loop inside that waits a socket to handle. Then, the socket goes to SocketProcessorRunnable.
+The main class is [WebServer](https://github.com/babobka/VSJWSEmbedded/blob/master/src/ru/babobka/vsjws/webserver/WebServer.java) . It has a run() method to run a server. There is a loop inside that waits for a socket to handle. Then, the socket goes to [SocketProcessorRunnable](https://github.com/babobka/VSJWSEmbedded/blob/master/src/ru/babobka/vsjws/runnable/SocketProcessorRunnable.java).
 SocketProcessorRunnable determines what web controller must process a given request using its URL and HTTP method.
 
 ## Code examples
@@ -86,8 +86,7 @@ public class AuthWebFilter implements WebFilter {
 	public HttpResponse onFilter(HttpRequest request) {
 		String login = request.getHeader("X-Login");
 		String password = request.getHeader("X-Password");		
-		if ((login == null || password == null)
-				|| (!login.equals(LOGIN) || !password.equals(PASSWORD))) {
+		if (!login.equals(LOGIN) || !password.equals(PASSWORD)) {
 			// Show error response
 			return HttpResponse.textResponse("Bad login/password combination",
 					ResponseCode.UNAUTHORIZED,
