@@ -2,6 +2,7 @@ package ru.babobka.vsjws.webserver;
 
 import ru.babobka.nodeLogger.NodeLogger;
 import ru.babobka.vsjws.constant.RegularExpressions;
+import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.listener.OnServerStartListener;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
@@ -27,9 +28,11 @@ public class WebServer {
 
 	private final String name;
 
-	private final OnServerStartListener onServerStartListener;
+	private volatile OnServerStartListener onServerStartListener;
 
-	private ServerSocket ss;
+	private volatile OnExceptionListener onExceptionListener;
+
+	private volatile ServerSocket ss;
 
 	private final String webContentFolder;
 
@@ -49,19 +52,18 @@ public class WebServer {
 
 	private final NodeLogger logger;
 
-	private ExecutorService threadPool;
+	private volatile ExecutorService threadPool;
 
 	private final int port;
 
 	public WebServer(String name, int port, String webContentFolder,
 			String logFolder) throws IOException {
 		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder,
-				logFolder, null);
+				logFolder);
 	}
 
 	public WebServer(String name, int port, Integer sessionTimeOutSeconds,
-			String webContentFolder, String logFolder,
-			OnServerStartListener onServerStartListener) throws IOException {
+			String webContentFolder, String logFolder) throws IOException {
 		if (port < 0 || port > Short.MAX_VALUE) {
 			throw new IllegalArgumentException(
 					"Port must be in range [0;65536)");
@@ -87,7 +89,6 @@ public class WebServer {
 		}
 		logger = new NodeLogger(WebServer.class, logFolder, name);
 		this.name = name;
-		this.onServerStartListener = onServerStartListener;
 		this.webContentFolder = webContentFolder;
 		this.sessionTimeOutSeconds = sessionTimeOutSeconds;
 		this.logFolder = logFolder;
@@ -145,15 +146,16 @@ public class WebServer {
 				this.ss = new ServerSocket(port, BACKLOG,
 						InetAddress.getLoopbackAddress());
 				threadPool = Executors.newFixedThreadPool(10);
-				if (onServerStartListener != null) {
-					onServerStartListener.onStart(name, port);
+				OnServerStartListener listener = onServerStartListener;
+				if (listener != null) {
+					listener.onStart(name, port);
 				}
 				while (!stopped) {
 					try {
 						Socket s = ss.accept();
 						threadPool.execute(new SocketProcessorRunnable(s,
 								controllerHashMap, httpSession, logger,
-								webContentFolder));
+								webContentFolder, onExceptionListener));
 					} catch (IOException e) {
 						if (!stopped) {
 							e.printStackTrace();
@@ -198,6 +200,19 @@ public class WebServer {
 
 	public String getName() {
 		return name;
+	}
+
+	public OnExceptionListener getOnExceptionListener() {
+		return onExceptionListener;
+	}
+
+	public void setOnExceptionListener(OnExceptionListener onExceptionListener) {
+		this.onExceptionListener = onExceptionListener;
+	}
+
+	public void setOnServerStartListener(
+			OnServerStartListener onServerStartListener) {
+		this.onServerStartListener = onServerStartListener;
 	}
 
 	public static void main(String[] args) {

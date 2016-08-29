@@ -1,6 +1,7 @@
 package ru.babobka.vsjws.model;
 
 import ru.babobka.vsjws.constant.ContentType;
+import ru.babobka.vsjws.util.TextUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,9 +52,6 @@ public class HttpResponse {
 			return text;
 		}
 	}
-	
-	
-	
 
 	public static final Charset MAIN_ENCODING = Charset.forName("UTF-8");
 
@@ -146,6 +144,17 @@ public class HttpResponse {
 		return new HttpResponse(code, contentType,
 				content.getBytes(MAIN_ENCODING), null,
 				content.getBytes().length);
+	}
+
+	public static HttpResponse exceptionResponse(Exception e, ResponseCode code) {
+		String content = TextUtil.getStringFromException(e);
+		return new HttpResponse(code, ContentType.PLAIN,
+				content.getBytes(MAIN_ENCODING), null,
+				content.getBytes().length);
+	}
+
+	public static HttpResponse exceptionResponse(Exception e) {
+		return exceptionResponse(e, ResponseCode.INTERNAL_SERVER_ERROR);
 	}
 
 	public static HttpResponse textResponse(String content, String contentType) {

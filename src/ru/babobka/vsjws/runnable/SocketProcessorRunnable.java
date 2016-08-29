@@ -2,12 +2,11 @@ package ru.babobka.vsjws.runnable;
 
 import ru.babobka.nodeLogger.NodeLogger;
 import ru.babobka.vsjws.constant.Method;
-import ru.babobka.vsjws.constant.ContentType;
+import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.util.HttpUtil;
-import ru.babobka.vsjws.util.TextUtil;
 import ru.babobka.vsjws.webcontroller.StaticResourcesController;
 import ru.babobka.vsjws.webcontroller.WebController;
 
@@ -26,15 +25,18 @@ public class SocketProcessorRunnable implements Runnable {
 	private final Map<String, WebController> controllerMap;
 	private final NodeLogger logger;
 	private final StaticResourcesController staticResourcesController;
+	private final OnExceptionListener onExceptionListener;
 	private final String webContentFolder;
 
 	public SocketProcessorRunnable(Socket s,
 			Map<String, WebController> controllerMap, HttpSession httpSession,
-			NodeLogger logger, String webContentFolder) throws IOException {
+			NodeLogger logger, String webContentFolder,
+			OnExceptionListener onExceptionListener) throws IOException {
 		this.s = s;
 
 		this.httpSession = httpSession;
 		this.controllerMap = controllerMap;
+		this.onExceptionListener = onExceptionListener;
 		this.logger = logger;
 		this.staticResourcesController = new StaticResourcesController(
 				webContentFolder);
@@ -74,12 +76,17 @@ public class SocketProcessorRunnable implements Runnable {
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			String stackTrace = TextUtil.getStringFromException(e);
-			logger.log(Level.SEVERE, stackTrace);
-			response = HttpResponse.textResponse(stackTrace,
-					HttpResponse.ResponseCode.INTERNAL_SERVER_ERROR,
-					ContentType.PLAIN);
+			logger.log(Level.SEVERE, e);
+			if (onExceptionListener != null) {
+				try {
+					response = onExceptionListener.onException(e);
+				} catch (Exception e1) {
+					logger.log(Level.SEVERE, e1);
+					response = HttpResponse.exceptionResponse(e1);
+				}
+			} else {
+				response = HttpResponse.exceptionResponse(e);
+			}
 		} finally {
 			try {
 				HttpUtil.writeResponse(s.getOutputStream(), response, noContent);
@@ -94,4 +101,5 @@ public class SocketProcessorRunnable implements Runnable {
 			}
 		}
 	}
+
 }
