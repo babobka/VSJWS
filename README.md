@@ -38,17 +38,17 @@ SocketProcessorRunnable determines what web controller must process a given requ
 
 	public static void main(String[] args) throws IOException {
 		WebServer webServer = new WebServer(SERVER_NAME, PORT,
-				SESSION_TIMEOUT_SECS, WEB_CONTENT_FOLDER, LOG_FOLDER, null);
+				SESSION_TIMEOUT_SECS, WEB_CONTENT_FOLDER, LOG_FOLDER);
 		// Adding controllers for a specified URLs
-		webServer.addController("/json", new JsonTestController());
-		webServer.addController("/xml", new XmlTestController());
-		webServer.addController("/heavy", new HeavyRequestController());
-		webServer.addController("/error", new InternalErrorController());
-		webServer.addController("/session", new SessionTestController());
-		webServer.addController("/simpleForm", new SimpleFormController());
-		webServer.addController("/xslt", new XsltTestController());
-		webServer.addController("/cookies", new CookieTestController());
-		webServer.addController("/", new MainPageController());
+		webServer.addController("json", new JsonTestController());
+		webServer.addController("xml", new XmlTestController());
+		webServer.addController("heavy", new HeavyRequestController());
+		webServer.addController("error", new InternalErrorController());
+		webServer.addController("session", new SessionTestController());
+		webServer.addController("simpleForm", new SimpleFormController());
+		webServer.addController("xslt", new XsltTestController());
+		webServer.addController("cookies", new CookieTestController());
+		webServer.addController("", new MainPageController());
 		webServer.run();
 	}
 
