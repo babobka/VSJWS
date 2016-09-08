@@ -10,7 +10,6 @@ import ru.babobka.vsjws.webcontroller.WebController;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
@@ -37,6 +36,8 @@ public class WebServer {
 	private final String webContentFolder;
 
 	private static final int DEFAULT_SESSION_TIME_OUT_SEC = 900;
+
+	private static final int SOCKET_READ_TIMEOUT_MILLIS = 1000;
 
 	private static final int BACKLOG = 10;
 
@@ -143,8 +144,7 @@ public class WebServer {
 			}
 
 			try {
-				this.ss = new ServerSocket(port, BACKLOG,
-						InetAddress.getLoopbackAddress());
+				this.ss = new ServerSocket(port, BACKLOG);
 				threadPool = Executors.newFixedThreadPool(10);
 				OnServerStartListener listener = onServerStartListener;
 				if (listener != null) {
@@ -153,22 +153,26 @@ public class WebServer {
 				while (!stopped) {
 					try {
 						Socket s = ss.accept();
+						s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 						threadPool.execute(new SocketProcessorRunnable(s,
 								controllerHashMap, httpSession, logger,
 								webContentFolder, onExceptionListener));
 					} catch (IOException e) {
 						if (!stopped) {
 							e.printStackTrace();
+						} else {
+							threadPool.shutdown();
+							break;
 						}
-						threadPool.shutdown();
-						break;
 					}
 
 				}
 			} finally {
 				running = false;
 				stopped = true;
-				threadPool.shutdown();
+				if (threadPool != null) {
+					threadPool.shutdown();
+				}
 				if (this.ss != null) {
 					this.ss.close();
 				}

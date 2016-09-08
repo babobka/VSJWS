@@ -39,7 +39,9 @@ public class HttpResponse {
 
 		NOT_IMPLEMENTED("501 Not implemented"),
 
-		SERVICE_UNAVAILABLE("503 Service unavailable");
+		SERVICE_UNAVAILABLE("503 Service unavailable"),
+
+		REQUEST_TIMEOUT("408 Request Timeout");
 
 		private final String text;
 
@@ -65,7 +67,7 @@ public class HttpResponse {
 
 	private static final Tika tika = new Tika();
 
-	private final HashMap<String, String> cookies = new HashMap<>();
+	private final Map<String, String> cookies = new HashMap<>();
 
 	private final ResponseCode responseCode;
 
@@ -141,16 +143,17 @@ public class HttpResponse {
 
 	public static HttpResponse textResponse(String content, ResponseCode code,
 			String contentType) {
-		return new HttpResponse(code, contentType,
-				content.getBytes(MAIN_ENCODING), null,
-				content.getBytes().length);
+		byte[] bytes = content.getBytes(MAIN_ENCODING);
+		return new HttpResponse(code, contentType, bytes, null, bytes.length);
+	}
+
+	public static HttpResponse ok() {
+		return textResponse("Ok", ResponseCode.OK, ContentType.PLAIN);
 	}
 
 	public static HttpResponse exceptionResponse(Exception e, ResponseCode code) {
-		String content = TextUtil.getStringFromException(e);
-		return new HttpResponse(code, ContentType.PLAIN,
-				content.getBytes(MAIN_ENCODING), null,
-				content.getBytes().length);
+		return textResponse(TextUtil.getStringFromException(e), code,
+				ContentType.PLAIN);
 	}
 
 	public static HttpResponse exceptionResponse(Exception e) {

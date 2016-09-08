@@ -14,7 +14,6 @@ public class HttpSession {
 
 	private final Map<String, ConcurrentHashMap<String, Serializable>> expiringMap;
 
-
 	public HttpSession(int seconds) {
 		expiringMap = ExpiringMap.builder()
 				.expirationPolicy(ExpiringMap.ExpirationPolicy.CREATED)
@@ -34,12 +33,14 @@ public class HttpSession {
 			}
 		}
 		map = expiringMap.get(sessionId);
-
 		return map;
 	}
 
-	public void create(String sessionId) {
+	public boolean exists(String sessionId) {
+		return expiringMap.containsKey(sessionId);
+	}
 
+	public void create(String sessionId) {
 		expiringMap.put(sessionId,
 				new ConcurrentHashMap<String, Serializable>());
 

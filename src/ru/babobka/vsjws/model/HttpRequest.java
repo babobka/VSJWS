@@ -1,5 +1,6 @@
 package ru.babobka.vsjws.model;
 
+import ru.babobka.vsjws.constant.Method;
 import ru.babobka.vsjws.util.HttpUtil;
 
 import java.io.*;
@@ -16,13 +17,13 @@ public class HttpRequest {
 
 	public static final String SESSION_ID = "X-Session-Id";
 
-	private final String method;
+	private String method;
 
-	private final String host;
+	private String host;
 
-	private final String uri;
+	private String uri;
 
-	private final String content;
+	private String content;
 
 	private final Map<String, String> params = new HashMap<>();
 
@@ -36,17 +37,22 @@ public class HttpRequest {
 
 	private final InetAddress address;
 
+	@SuppressWarnings("resource")
 	public HttpRequest(InetAddress address, InputStream is,
 			HttpSession httpSession) throws IOException {
 		this.address = address;
-		String method = null, uri = null, host = null;
 		int row = 0, contentLength = 0;
 		String uriParamsString = null;
 		BufferedReader br = new BufferedReader(new InputStreamReader(is));
-		while (true) {
-			String line = br.readLine();
-			if (line == null || line.trim().length() == 0) {
-				this.content = HttpUtil.getContent(contentLength, br);
+		String line;
+		while ((line = br.readLine()) != null) {			
+			if (line.isEmpty()) {
+				if (method != null
+						&& (method.equals(Method.PATCH)
+								|| method.equals(Method.POST) || method
+									.equals(Method.PUT))) {
+					this.content = HttpUtil.getContent(contentLength, br);
+				}
 				break;
 			}
 			if (row == 0) {
@@ -63,22 +69,24 @@ public class HttpRequest {
 				host = line.substring(line.indexOf(':') + 2, line.length());
 			} else if (line.startsWith("Cookie:")) {
 				cookies.putAll(HttpUtil.getCookies(line));
-			} else {
-				String[] header = line.split(":");
-				headers.put(header[0], header[1].substring(1));
-			}
-			if (contentLength == 0 && line.startsWith(CONTENT_LENGTH)) {
+			} else if (contentLength == 0 && line.startsWith(CONTENT_LENGTH)) {
 				contentLength = Integer.parseInt(line.substring(
 						line.indexOf(':') + 2, line.length()));
+				if (contentLength < 0) {
+					throw new IllegalArgumentException(
+							"'Content-Length' header wasn't set properly");
+				}
+			} else {
+				String[] header = line.split(":");
+				if (header.length >= 2) {
+					headers.put(header[0], header[1].substring(1));
+				}
 			}
 			row++;
 		}
 
-		this.method = method;
-		this.host = host;
-		this.uri = uri;
-		params.putAll(HttpUtil.getParams(content));
-		urlParams.putAll(HttpUtil.getParams(uriParamsString));
+		this.params.putAll(HttpUtil.getParams(content));
+		this.urlParams.putAll(HttpUtil.getParams(uriParamsString));
 		this.httpSession = httpSession;
 	}
 
@@ -92,6 +100,7 @@ public class HttpRequest {
 
 	public Map<String, Serializable> getSession() {
 		String sessionId = cookies.get(SESSION_ID);
+		System.out.println(sessionId);
 		return httpSession.get(sessionId);
 
 	}
@@ -122,9 +131,11 @@ public class HttpRequest {
 
 	@Override
 	public String toString() {
-		return "HttpRequest{" + "params=" + params + ", method='" + method
-				+ '\'' + ", host='" + host + '\'' + ", uri='" + uri + '\''
-				+ ", content='" + content + '\'' + ", cookies=" + cookies + '}';
+		return "HttpRequest [method=" + method + ", host=" + host + ", uri="
+				+ uri + ", content=" + content + ", params=" + params
+				+ ", urlParams=" + urlParams + ", cookies=" + cookies
+				+ ", headers=" + headers + ", httpSession=" + httpSession
+				+ ", address=" + address + "]";
 	}
 
 	public String getContent() {

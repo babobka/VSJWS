@@ -30,7 +30,7 @@ public class HttpUtil {
 			headers.put("Content-Type:", response.getContentType());
 			headers.put("Content-Length:",
 					String.valueOf(response.getContentLength()));
-			headers.put("Connection:", "close");	
+			headers.put("Connection:", "close");
 			headers.putAll(response.getHttpCookieHeaders());
 			for (Map.Entry<String, String> entry : headers.entrySet()) {
 				header.append(entry.getKey());
@@ -71,17 +71,15 @@ public class HttpUtil {
 	public static String getContent(int contentLength, BufferedReader br)
 			throws IOException {
 		StringBuilder body = new StringBuilder();
-		if (contentLength != 0) {
-			for (int i = 0; i < contentLength; i++) {
-				int a = br.read();
-				body.append((char) a);
-			}
+		for (int i = 0; i < contentLength; i++) {
+			body.append((char) br.read());
 		}
-		return body.toString();
+		return new String(body.toString().getBytes(),
+				HttpResponse.MAIN_ENCODING);
 	}
 
 	public static Map<String, String> getCookies(String s) {
-		HashMap<String, String> cookies = new HashMap<>();
+		Map<String, String> cookies = new HashMap<>();
 		String[] cookiesArray = s.substring(s.indexOf(':') + 2, s.length())
 				.split("; ");
 		for (int i = 0; i < cookiesArray.length; i++) {
@@ -96,15 +94,13 @@ public class HttpUtil {
 	}
 
 	public static Map<String, String> getParams(String paramText) {
-		HashMap<String, String> params = new HashMap<>();
+		Map<String, String> params = new HashMap<>();
 		if (paramText != null && paramText.length() > 0) {
 			String[] paramsArray = paramText.split("&");
 			for (int i = 0; i < paramsArray.length; i++) {
 				String[] keyValue = paramsArray[i].split("=");
 				if (keyValue.length > 1) {
 					params.put(keyValue[0], keyValue[1]);
-				} else {
-					params.put(keyValue[0], null);
 				}
 			}
 		}

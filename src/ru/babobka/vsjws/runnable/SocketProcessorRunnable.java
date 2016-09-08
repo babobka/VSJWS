@@ -5,6 +5,7 @@ import ru.babobka.vsjws.constant.Method;
 import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
+import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.util.HttpUtil;
 import ru.babobka.vsjws.webcontroller.StaticResourcesController;
@@ -12,6 +13,7 @@ import ru.babobka.vsjws.webcontroller.WebController;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -33,7 +35,6 @@ public class SocketProcessorRunnable implements Runnable {
 			NodeLogger logger, String webContentFolder,
 			OnExceptionListener onExceptionListener) throws IOException {
 		this.s = s;
-
 		this.httpSession = httpSession;
 		this.controllerMap = controllerMap;
 		this.onExceptionListener = onExceptionListener;
@@ -57,6 +58,15 @@ public class SocketProcessorRunnable implements Runnable {
 				noContent = true;
 			}
 			if (request.getUri() != null) {
+				String sessionId = request.getCookies().get(
+						HttpRequest.SESSION_ID);
+				if (sessionId == null) {
+					sessionId = HttpUtil.generateSessionId();
+					response.addCookie(HttpRequest.SESSION_ID, sessionId);
+				}
+				if (!httpSession.exists(sessionId)) {
+					httpSession.create(sessionId);
+				}
 				WebController webController;
 				if (request.getUri().startsWith("/web-content")) {
 					if (webContentFolder != null) {
@@ -67,14 +77,16 @@ public class SocketProcessorRunnable implements Runnable {
 					webController = controllerMap.get(request.getUri());
 					response = webController.control(request);
 				}
-				String sessionId = request.getCookies().get(
-						HttpRequest.SESSION_ID);
-				if (sessionId == null) {
-					sessionId = HttpUtil.generateSessionId();
-					response.addCookie(HttpRequest.SESSION_ID, sessionId);
-					httpSession.create(sessionId);
-				}
+
 			}
+		}
+
+		catch (IllegalArgumentException e) {
+			response = HttpResponse.exceptionResponse(e,
+					ResponseCode.BAD_REQUEST);
+		} catch (SocketTimeoutException e) {
+			response = HttpResponse.exceptionResponse(e,
+					ResponseCode.REQUEST_TIMEOUT);
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, e);
 			if (onExceptionListener != null) {
