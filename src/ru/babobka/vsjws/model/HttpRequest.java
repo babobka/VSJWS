@@ -1,6 +1,8 @@
 package ru.babobka.vsjws.model;
 
 import ru.babobka.vsjws.constant.Method;
+import ru.babobka.vsjws.exception.BadProtocolSpecifiedException;
+import ru.babobka.vsjws.exception.InvalidContentLengthException;
 import ru.babobka.vsjws.util.HttpUtil;
 
 import java.io.*;
@@ -17,6 +19,8 @@ public class HttpRequest {
 
 	public static final String SESSION_ID = "X-Session-Id";
 
+	public static final String PROTOCOL = "HTTP/1.1";
+
 	private String method;
 
 	private String host;
@@ -24,6 +28,8 @@ public class HttpRequest {
 	private String uri;
 
 	private String content;
+
+	private int contentLength = -1;
 
 	private final Map<String, String> params = new HashMap<>();
 
@@ -37,32 +43,35 @@ public class HttpRequest {
 
 	private final InetAddress address;
 
-	@SuppressWarnings("resource")
-	public HttpRequest(InetAddress address, InputStream is,
-			HttpSession httpSession) throws IOException {
+	public HttpRequest(InetAddress address, InputStream is, HttpSession httpSession) throws IOException {
 		this.address = address;
 		int row = 0, contentLength = 0;
 		String uriParamsString = null;
 		BufferedReader br = new BufferedReader(new InputStreamReader(is));
 		String line;
-		while ((line = br.readLine()) != null) {			
+		while ((line = br.readLine()) != null) {
 			if (line.isEmpty()) {
-				if (method != null
-						&& (method.equals(Method.PATCH)
-								|| method.equals(Method.POST) || method
-									.equals(Method.PUT))) {
+				if (method != null && isMethodWithContent(method)) {
 					this.content = HttpUtil.getContent(contentLength, br);
 				}
 				break;
 			}
 			if (row == 0) {
 				String[] startingLine = line.split(" ");
-				method = startingLine[0];
-				uri = startingLine[1];
-				String[] uriArray = uri.split("\\?");
-				uri = uriArray[0];
-				if (uriArray.length > 1) {
-					uriParamsString = uriArray[1];
+				if (startingLine.length < 3) {
+					throw new IllegalArgumentException("Bad first line");
+				} else {
+					method = startingLine[0];
+					uri = startingLine[1];
+					if (!startingLine[2].equals(PROTOCOL)) {
+						throw new BadProtocolSpecifiedException();
+					}
+					String[] uriArray = uri.split("\\?");
+					uri = uriArray[0];
+
+					if (uriArray.length > 1) {
+						uriParamsString = uriArray[1];
+					}
 				}
 
 			} else if (row == 1) {
@@ -70,12 +79,11 @@ public class HttpRequest {
 			} else if (line.startsWith("Cookie:")) {
 				cookies.putAll(HttpUtil.getCookies(line));
 			} else if (contentLength == 0 && line.startsWith(CONTENT_LENGTH)) {
-				contentLength = Integer.parseInt(line.substring(
-						line.indexOf(':') + 2, line.length()));
+				contentLength = Integer.parseInt(line.substring(line.indexOf(':') + 2, line.length()));
 				if (contentLength < 0) {
-					throw new IllegalArgumentException(
-							"'Content-Length' header wasn't set properly");
+					throw new InvalidContentLengthException("'Content-Length' header wasn't set properly");
 				}
+				this.contentLength = contentLength;
 			} else {
 				String[] header = line.split(":");
 				if (header.length >= 2) {
@@ -84,7 +92,11 @@ public class HttpRequest {
 			}
 			row++;
 		}
-
+		if (method == null) {
+			throw new IllegalArgumentException("HTTP method was not specified");
+		} else if (isMethodWithContent(method) && contentLength == -1) {
+			throw new InvalidContentLengthException("'Content-Length' header wasn't set properly");
+		}
 		this.params.putAll(HttpUtil.getParams(content));
 		this.urlParams.putAll(HttpUtil.getParams(uriParamsString));
 		this.httpSession = httpSession;
@@ -96,6 +108,11 @@ public class HttpRequest {
 			return param;
 		}
 		return "";
+	}
+
+	private boolean isMethodWithContent(String method) {
+		return (method.equals(Method.PATCH) || method.equals(Method.POST) || method.equals(Method.PUT));
+
 	}
 
 	public Map<String, Serializable> getSession() {
@@ -131,11 +148,9 @@ public class HttpRequest {
 
 	@Override
 	public String toString() {
-		return "HttpRequest [method=" + method + ", host=" + host + ", uri="
-				+ uri + ", content=" + content + ", params=" + params
-				+ ", urlParams=" + urlParams + ", cookies=" + cookies
-				+ ", headers=" + headers + ", httpSession=" + httpSession
-				+ ", address=" + address + "]";
+		return "HttpRequest [method=" + method + ", host=" + host + ", uri=" + uri + ", content=" + content
+				+ ", params=" + params + ", urlParams=" + urlParams + ", cookies=" + cookies + ", headers=" + headers
+				+ ", httpSession=" + httpSession + ", address=" + address + "]";
 	}
 
 	public String getContent() {
@@ -163,13 +178,16 @@ public class HttpRequest {
 		result = prime * result + ((method == null) ? 0 : method.hashCode());
 		result = prime * result + ((params == null) ? 0 : params.hashCode());
 		result = prime * result + ((uri == null) ? 0 : uri.hashCode());
-		result = prime * result
-				+ ((urlParams == null) ? 0 : urlParams.hashCode());
+		result = prime * result + ((urlParams == null) ? 0 : urlParams.hashCode());
 		return result;
 	}
 
 	public InetAddress getAddress() {
 		return address;
+	}
+
+	public int getContentLength() {
+		return contentLength;
 	}
 
 	@Override

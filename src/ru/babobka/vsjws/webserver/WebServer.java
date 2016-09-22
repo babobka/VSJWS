@@ -1,6 +1,6 @@
 package ru.babobka.vsjws.webserver;
 
-import ru.babobka.nodeLogger.NodeLogger;
+import ru.babobka.vsjsw.logger.SimpleLogger;
 import ru.babobka.vsjws.constant.RegularExpressions;
 import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.listener.OnServerStartListener;
@@ -51,7 +51,7 @@ public class WebServer {
 
 	private final String logFolder;
 
-	private final NodeLogger logger;
+	private final SimpleLogger logger;
 
 	private volatile ExecutorService threadPool;
 
@@ -88,7 +88,7 @@ public class WebServer {
 						"Web content folder doesn't exist");
 			}
 		}
-		logger = new NodeLogger(WebServer.class, logFolder, name);
+		logger = new SimpleLogger(WebServer.class, logFolder, name);
 		this.name = name;
 		this.webContentFolder = webContentFolder;
 		this.sessionTimeOutSeconds = sessionTimeOutSeconds;

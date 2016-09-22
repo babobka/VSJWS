@@ -20,18 +20,17 @@ public class HttpUtil {
 
 	}
 
-	public static void writeResponse(OutputStream os, HttpResponse response,
-			boolean noContent) throws IOException {
+	public static void writeResponse(OutputStream os, HttpResponse response, boolean noContent) throws IOException {
 		if (response != null) {
-			StringBuilder header = new StringBuilder("HTTP/1.1 "
-					+ response.getResponseCode() + "\n");
+			StringBuilder header = new StringBuilder("HTTP/1.1 " + response.getResponseCode() + "\n");
 			Map<String, String> headers = new LinkedHashMap<>();
-			headers.put("Server:", "vsjws");
-			headers.put("Content-Type:", response.getContentType());
-			headers.put("Content-Length:",
+			headers.put(HttpResponse.RestrictedHeader.SERVER + ":", "vsjws");
+			headers.put(HttpResponse.RestrictedHeader.CONTENT_TYPE + ":", response.getContentType());
+			headers.put(HttpResponse.RestrictedHeader.CONTENT_LENGTH + ":",
 					String.valueOf(response.getContentLength()));
-			headers.put("Connection:", "close");
+			headers.put(HttpResponse.RestrictedHeader.CONNECTION + ":", "close");
 			headers.putAll(response.getHttpCookieHeaders());
+			headers.putAll(response.getOtherHeaders());
 			for (Map.Entry<String, String> entry : headers.entrySet()) {
 				header.append(entry.getKey());
 				header.append(" ");
@@ -68,20 +67,17 @@ public class HttpUtil {
 		os.flush();
 	}
 
-	public static String getContent(int contentLength, BufferedReader br)
-			throws IOException {
+	public static String getContent(int contentLength, BufferedReader br) throws IOException {
 		StringBuilder body = new StringBuilder();
 		for (int i = 0; i < contentLength; i++) {
 			body.append((char) br.read());
 		}
-		return new String(body.toString().getBytes(),
-				HttpResponse.MAIN_ENCODING);
+		return new String(body.toString().getBytes(), HttpResponse.MAIN_ENCODING);
 	}
 
 	public static Map<String, String> getCookies(String s) {
 		Map<String, String> cookies = new HashMap<>();
-		String[] cookiesArray = s.substring(s.indexOf(':') + 2, s.length())
-				.split("; ");
+		String[] cookiesArray = s.substring(s.indexOf(':') + 2, s.length()).split("; ");
 		for (int i = 0; i < cookiesArray.length; i++) {
 			String[] cookie = cookiesArray[i].split("=");
 			cookies.put(cookie[0], cookie[1]);
