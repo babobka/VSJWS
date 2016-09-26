@@ -9,7 +9,9 @@ import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
 import ru.babobka.vsjws.model.HttpSession;
+import ru.babobka.vsjws.model.RawHttpRequest;
 import ru.babobka.vsjws.util.HttpUtil;
+import ru.babobka.vsjws.util.TextUtil;
 import ru.babobka.vsjws.webcontroller.StaticResourcesController;
 import ru.babobka.vsjws.webcontroller.WebController;
 
@@ -48,27 +50,28 @@ public class SocketProcessorRunnable implements Runnable {
 		HttpResponse response = HttpResponse.NOT_FOUND_RESPONSE;
 		boolean noContent = false;
 		try {
-			HttpRequest request = new HttpRequest(s.getInetAddress(), s.getInputStream(), httpSession);
+			HttpRequest request = new HttpRequest(s.getInetAddress(), new RawHttpRequest(s.getInputStream()),
+					httpSession);
 			if (request.getMethod().equals(Method.HEAD)) {
 				noContent = true;
 			}
-			if (request.getUri() != null) {
-				String sessionId = request.getCookies().get(HttpRequest.SESSION_ID);
+			String cleanedUri = HttpUtil.cleanUri(request.getUri());
+			if (cleanedUri != null) {
+				String sessionId = request.getCookies().get(HttpRequest.SESSION_ID_HEADER);
 				if (sessionId == null) {
 					sessionId = HttpUtil.generateSessionId();
-					response.addCookie(HttpRequest.SESSION_ID, sessionId);
+					response.addCookie(HttpRequest.SESSION_ID_HEADER, sessionId);
 				}
 				if (!httpSession.exists(sessionId)) {
 					httpSession.create(sessionId);
 				}
 				WebController webController;
-				if (request.getUri().startsWith("/web-content")) {
+				if (cleanedUri.startsWith("/web-content")) {
 					if (webContentFolder != null) {
 						webController = staticResourcesController;
 						response = webController.onGet(request);
 					}
-				} else if (controllerMap.containsKey(request.getUri())) {
-					webController = controllerMap.get(request.getUri());
+				} else if ((webController = controllerMap.get(cleanedUri)) != null) {
 					response = webController.control(request);
 				}
 

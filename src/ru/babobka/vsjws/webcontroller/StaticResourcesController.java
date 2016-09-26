@@ -18,8 +18,7 @@ public class StaticResourcesController extends WebController {
 	@Override
 	public HttpResponse onGet(HttpRequest request) throws IOException {
 		String uri = request.getUri();
-		String fileName = uri.replace('/', File.separatorChar).replace(
-				"web-content", "");
+		String fileName = uri.replace('/', File.separatorChar).replace("web-content", "");
 		File file = new File(webContentFolder + fileName);
 		if (file.exists() && file.isFile()) {
 			return HttpResponse.fileResponse(file);
@@ -27,5 +26,5 @@ public class StaticResourcesController extends WebController {
 			return HttpResponse.NOT_FOUND_RESPONSE;
 		}
 	}
-	
+
 }
