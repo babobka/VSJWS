@@ -65,11 +65,9 @@ public class SocketProcessorRunnable implements Runnable {
 					httpSession.create(sessionId);
 				}
 				WebController webController;
-				if (cleanedUri.startsWith("/web-content")) {
-					if (webContentFolder != null) {
-						webController = staticResourcesController;
-						response = webController.onGet(request);
-					}
+				if (cleanedUri.startsWith("/web-content") && webContentFolder != null) {
+					webController = staticResourcesController;
+					response = webController.onGet(request);
 				} else if ((webController = controllerMap.get(cleanedUri)) != null) {
 					response = webController.control(request);
 				}
@@ -99,13 +97,12 @@ public class SocketProcessorRunnable implements Runnable {
 			try {
 				HttpUtil.writeResponse(s.getOutputStream(), response, noContent);
 			} catch (IOException e1) {
-				e1.printStackTrace();
+				logger.log(Level.SEVERE, e1);
 			}
 			try {
-				if (s != null)
-					s.close();
+				s.close();
 			} catch (IOException e) {
-				e.printStackTrace();
+				logger.log(Level.SEVERE, e);
 			}
 		}
 	}

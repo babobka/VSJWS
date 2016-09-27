@@ -6,10 +6,6 @@ package ru.babobka.vsjws.constant;
  */
 public class ContentType {	
 	
-	private ContentType()
-	{
-		
-	}
 	private static final String CHARSET = "charset=UTF-8";
 
 	public static final String HTML = "text/html;" + CHARSET;
@@ -19,6 +15,12 @@ public class ContentType {
 	public static final String PLAIN = "text/plain;" + CHARSET;
 
 	public static final String XML = "text/xml;" + CHARSET;
+	
+	private ContentType()
+	{
+		
+	}
+
 	
 	
 

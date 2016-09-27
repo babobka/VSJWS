@@ -71,7 +71,7 @@ public interface HttpUtil {
 		if (uriArray.length > 1) {
 			return getParams(uriArray[1]);
 		} else {
-			return new HashMap<String, String>();
+			return new HashMap<>();
 		}
 	}
 

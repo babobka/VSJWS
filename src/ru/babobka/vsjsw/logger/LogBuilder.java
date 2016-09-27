@@ -21,7 +21,7 @@ interface LogBuilder {
 			folder.mkdir();
 		}
 		String fileName = folder.getAbsolutePath() + File.separator + prefix + "_" + System.currentTimeMillis()
-				+ ".log";
+				+ ".log"; 
 		FileHandler fh = new FileHandler(fileName);
 		Handler ch = new ConsoleHandler();
 		LogFormatter formatter = new LogFormatter();

@@ -134,7 +134,7 @@ public class WebServer {
 	}
 
 	private void runBlocking() throws IOException {
-
+		ServerSocket localServerSocket = null;
 		try {
 
 			logger.log(Level.INFO, "Running server " + getBeautifulName());
@@ -143,16 +143,16 @@ public class WebServer {
 			if (listener != null) {
 				listener.onStart(name, port);
 			}
-			ServerSocket ss = this.ss;
+			localServerSocket = this.ss;
 			while (running) {
 				try {
-					Socket s = ss.accept();
+					Socket s = localServerSocket.accept();
 					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
 							webContentFolder, onExceptionListener));
 				} catch (IOException e) {
-					if (running && !ss.isClosed()) {
-						e.printStackTrace();
+					if (running && !localServerSocket.isClosed()) {
+						logger.log(e);
 					} else {
 						threadPool.shutdown();
 						break;
@@ -161,13 +161,12 @@ public class WebServer {
 
 			}
 		} finally {
-			ExecutorService threadPool = this.threadPool;
-			if (threadPool != null) {
-				threadPool.shutdown();
+			ExecutorService localThreadPool = this.threadPool;
+			if (localThreadPool != null) {
+				localThreadPool.shutdown();
 			}
-			ServerSocket ss = this.ss;
-			if (ss != null) {
-				ss.close();
+			if (localServerSocket != null) {
+				localServerSocket.close();
 			}
 
 		}
@@ -179,14 +178,13 @@ public class WebServer {
 		if (!running) {
 			synchronized (this) {
 				if (!running) {
-
 					if (startThread != null) {
 						try {
 							logger.log(Level.INFO, "Wait starting thread to join");
-							startThread.join();
+							if (startThread.isAlive())
+								startThread.join();
 							logger.log(Level.INFO, "Done waitig starting thread");
 						} catch (InterruptedException e) {
-							e.printStackTrace();
 							throw new IOException(e);
 						}
 					}
@@ -225,12 +223,12 @@ public class WebServer {
 				if (running) {
 					running = false;
 					try {
-						ServerSocket ss = this.ss;
-						if (ss != null && !ss.isClosed()) {
-							ss.close();
+						ServerSocket localServerSocket = this.ss;
+						if (localServerSocket != null && !localServerSocket.isClosed()) {
+							localServerSocket.close();
 						}
 					} catch (IOException e) {
-						e.printStackTrace();
+						logger.log(e);
 					}
 				}
 			}

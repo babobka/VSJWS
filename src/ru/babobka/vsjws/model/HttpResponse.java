@@ -1,22 +1,33 @@
 package ru.babobka.vsjws.model;
 
-import ru.babobka.vsjws.constant.ContentType;
-import ru.babobka.vsjws.constant.RegularExpressions;
-import ru.babobka.vsjws.util.TextUtil;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.apache.tika.Tika;
 
 /**
  * Created by dolgopolov.a on 30.12.15.
  */
+
+import org.json.JSONObject;
+
+import ru.babobka.vsjws.constant.ContentType;
+import ru.babobka.vsjws.constant.RegularExpressions;
+import ru.babobka.vsjws.util.TextUtil;
+
 public class HttpResponse {
 
 	public enum RestrictedHeader {
@@ -117,7 +128,7 @@ public class HttpResponse {
 		if (key.endsWith(":")) {
 			otherHeaders.put(key, value);
 		} else {
-			otherHeaders.put(key+":", value);
+			otherHeaders.put(key + ":", value);
 		}
 
 		return this;
@@ -136,15 +147,6 @@ public class HttpResponse {
 		this.contentLength = contentLength;
 	}
 
-	/*
-	 * public HttpResponse(byte[] content, String responseCode, String
-	 * contentType) { this.responseCode = responseCode; this.contentType =
-	 * contentType; this.content = content; this.contentLength = content.length;
-	 * this.file = null;
-	 * 
-	 * }
-	 */
-
 	public static HttpResponse rawResponse(byte[] content, ResponseCode code, String contentType) {
 		return new HttpResponse(code, contentType, content, null, content.length);
 	}
@@ -152,16 +154,6 @@ public class HttpResponse {
 	public static HttpResponse rawResponse(byte[] content, String contentType) {
 		return rawResponse(content, ResponseCode.OK, contentType);
 	}
-
-	/*
-	 * public HttpResponse(File file, String responseCode) throws IOException {
-	 * this.responseCode = responseCode; if (file.exists() && file.isFile()) {
-	 * this.contentType = Files.probeContentType(file.toPath()); this.content =
-	 * null; this.file = file; this.contentLength = file.length(); } else {
-	 * throw new FileNotFoundException(); }
-	 * 
-	 * }
-	 */
 
 	public static HttpResponse fileResponse(File file, ResponseCode code) throws IOException {
 		if (file.exists() && file.isFile()) {
@@ -177,13 +169,6 @@ public class HttpResponse {
 
 	}
 
-	/*
-	 * public HttpResponse(String content, String responseCode, String
-	 * contentType) { this.responseCode = responseCode; this.contentType =
-	 * contentType; this.content = content.getBytes(MAIN_ENCODING);
-	 * this.contentLength = content.getBytes().length; this.file = null; }
-	 */
-
 	public static HttpResponse redirectResponse(String url) {
 		String localUrl = url;
 		if (!localUrl.startsWith("http")) {
@@ -197,17 +182,90 @@ public class HttpResponse {
 		}
 	}
 
+	public static HttpResponse jsonResponse(JSONObject json, ResponseCode code) {
+		return textResponse(json.toString(), code, ContentType.JSON);
+	}
+
+	public static HttpResponse jsonResponse(JSONObject json) {
+		return jsonResponse(json.toString(), ResponseCode.OK);
+	}
+
+	public static HttpResponse jsonResponse(String json, ResponseCode code) {
+		return jsonResponse(new JSONObject(json), code);
+	}
+
+	public static HttpResponse jsonResponse(String json) {
+		return jsonResponse(new JSONObject(json));
+	}
+
+	public static HttpResponse xmlResponse(String xml, ResponseCode code) {
+		return textResponse(xml, code, ContentType.XML);
+	}
+
+	public static HttpResponse xmlResponse(String xml) {
+		return xmlResponse(xml, ResponseCode.OK);
+	}
+
+	public static HttpResponse xsltResponse(String xml, StreamSource xslSource) throws IOException {
+		return xsltResponse(xml, xslSource, ResponseCode.OK);
+	}
+
+	public static HttpResponse xsltResponse(String xml, StreamSource xslSource, ResponseCode code) throws IOException {
+		StringReader reader = null;
+		StringWriter writer = null;
+		try {
+			reader = new StringReader(xml);
+			writer = new StringWriter();
+			TransformerFactory tFactory = TransformerFactory.newInstance();
+			Transformer transformer = tFactory.newTransformer(xslSource);
+			transformer.transform(new StreamSource(reader), new StreamResult(writer));
+			String html = writer.toString();
+			return HttpResponse.textResponse(html, code, ContentType.HTML);
+		} catch (TransformerException e) {
+			throw new IOException(e);
+		} finally {
+			if (reader != null) {
+				reader.close();
+			}
+			if (writer != null) {
+				writer.close();
+			}
+		}
+
+	}
+
 	public static HttpResponse textResponse(String content) {
 		return textResponse(content, ResponseCode.OK);
+	}
+
+	public static HttpResponse textResponse(Object content) {
+		return textResponse(content.toString());
+	}
+
+	public static HttpResponse htmlResponse(String content, ResponseCode code) {
+		return textResponse(content, code, ContentType.HTML);
+	}
+
+	public static HttpResponse htmlResponse(String content) {
+		return textResponse(content, ResponseCode.OK, ContentType.HTML);
 	}
 
 	public static HttpResponse textResponse(String content, ResponseCode code) {
 		return textResponse(content, code, ContentType.PLAIN);
 	}
 
+	public static HttpResponse textResponse(Object content, ResponseCode code) {
+		return textResponse(content.toString(), code);
+	}
+
 	public static HttpResponse textResponse(String content, ResponseCode code, String contentType) {
 		byte[] bytes = content.getBytes(MAIN_ENCODING);
 		return new HttpResponse(code, contentType, bytes, null, bytes.length);
+	}
+
+	public static HttpResponse textResponse(Object content, ResponseCode code, String contentType) {
+
+		return textResponse(content.toString(), code, contentType);
 	}
 
 	public static HttpResponse ok() {

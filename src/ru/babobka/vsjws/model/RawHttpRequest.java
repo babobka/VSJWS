@@ -23,7 +23,7 @@ public class RawHttpRequest {
 		this.body = body;
 		this.firstLine = firstLine;
 		if (headers != null)
-			this.headers.putAll(headers);
+			this.headers.putAll(headers); 
 	}
 
 	public RawHttpRequest(InputStream is) throws IOException {

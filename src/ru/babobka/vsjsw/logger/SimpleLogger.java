@@ -34,7 +34,7 @@ public class SimpleLogger {
 	public void log(Exception e) {
 		logger.log(Level.SEVERE, getStringFromException(e));
 	}
-
+ 
 	private static String getStringFromException(Exception ex) {
 		StringWriter errors = new StringWriter();
 		ex.printStackTrace(new PrintWriter(errors));
