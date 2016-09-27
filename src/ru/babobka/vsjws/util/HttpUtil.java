@@ -35,7 +35,7 @@ public interface HttpUtil {
 				headerBuilder.append(entry.getValue());
 				headerBuilder.append("\r\n");
 			}
-			System.out.println(headerBuilder);
+			
 			headerBuilder.append("\r\n");
 			os.write(headerBuilder.toString().getBytes(HttpResponse.MAIN_ENCODING));
 			if (!noContent) {

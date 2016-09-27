@@ -11,7 +11,6 @@ import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.model.RawHttpRequest;
 import ru.babobka.vsjws.util.HttpUtil;
-import ru.babobka.vsjws.util.TextUtil;
 import ru.babobka.vsjws.webcontroller.StaticResourcesController;
 import ru.babobka.vsjws.webcontroller.WebController;
 

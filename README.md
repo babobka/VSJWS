@@ -9,7 +9,6 @@ VSJWS is a very simple java web server. It can do many things:
 * Runnable as a '.jar' program
 
 But also it has things that are not done yet:
-* No redirects
 * No file uploading support
 * No HTTPS support (but can be implemented using NGINX)
 
@@ -89,8 +88,7 @@ public class AuthWebFilter implements WebFilter {
 		if (!login.equals(LOGIN) || !password.equals(PASSWORD)) {
 			// Show error response
 			return HttpResponse.textResponse("Bad login/password combination",
-					ResponseCode.UNAUTHORIZED,
-					ContentType.PLAIN);
+					ResponseCode.UNAUTHORIZED);
 		} else {
 			//Do nothing. Proceed.
 			return null;

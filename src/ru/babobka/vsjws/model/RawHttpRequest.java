@@ -59,4 +59,11 @@ public class RawHttpRequest {
 		return firstLine;
 	}
 
+	@Override
+	public String toString() {
+		return "RawHttpRequest [headers=" + headers + ", body=" + body + ", firstLine=" + firstLine + "]";
+	}
+	
+	
+
 }

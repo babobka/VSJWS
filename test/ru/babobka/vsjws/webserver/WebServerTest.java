@@ -18,7 +18,7 @@ public class WebServerTest {
 
 	private static final String LOG_FOLDER = "server_log";
 
-	private int tests = 5;
+	private int tests = 10;
 
 	private WebServer webServer;
 
@@ -34,6 +34,7 @@ public class WebServerTest {
 		}
 
 	}
+
 	@Test
 	public void testRun() throws IOException {
 		for (int i = 0; i < tests; i++) {
@@ -41,7 +42,6 @@ public class WebServerTest {
 			assertTrue(webServer.isRunning());
 		}
 	}
-
 
 	@Test
 	public void testStop() throws IOException {
@@ -51,6 +51,16 @@ public class WebServerTest {
 		}
 	}
 
+	@Test
+	public void testRunStopDelay() throws IOException, InterruptedException {
+		for (int i = 0; i < tests; i++) {
+			webServer.run();
+			assertTrue(webServer.isRunning());
+			Thread.sleep(200);
+			webServer.stop();
+			assertTrue(webServer.isStopped());
+		}
+	}
 
 	@Test
 	public void testRunStop() throws IOException, InterruptedException {

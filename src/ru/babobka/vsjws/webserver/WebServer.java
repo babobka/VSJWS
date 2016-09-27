@@ -40,6 +40,8 @@ public class WebServer {
 
 	private static final int SOCKET_READ_TIMEOUT_MILLIS = 2000;
 
+	private static final int MAX_PORT = 65536;
+
 	private static final int THREAD_POOL_SIZE = 10;
 
 	private static final int BACKLOG = 10;
@@ -60,14 +62,16 @@ public class WebServer {
 
 	private final int port;
 
+	private volatile Thread startThread;
+
 	public WebServer(String name, int port, String webContentFolder, String logFolder) throws IOException {
 		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder, logFolder);
 	}
 
 	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String webContentFolder, String logFolder)
 			throws IOException {
-		if (port < 0 || port > Short.MAX_VALUE) {
-			throw new IllegalArgumentException("Port must be in range [0;65536)");
+		if (port < 0 || port > MAX_PORT) {
+			throw new IllegalArgumentException("Port must be in range [0;" + MAX_PORT + ")");
 		}
 		if (sessionTimeOutSeconds != null && sessionTimeOutSeconds < 0) {
 			throw new IllegalArgumentException("Session time out must be > 0");
@@ -134,12 +138,14 @@ public class WebServer {
 	private void runBlocking() throws IOException {
 
 		try {
-			this.ss = new ServerSocket(port, BACKLOG);
+
+			logger.log(Level.INFO, "Running server " + getBeautifulName());
 			threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 			OnServerStartListener listener = onServerStartListener;
 			if (listener != null) {
 				listener.onStart(name, port);
 			}
+
 			while (!stopped) {
 				try {
 					Socket s = ss.accept();
@@ -147,6 +153,8 @@ public class WebServer {
 					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
 							webContentFolder, onExceptionListener));
 				} catch (IOException e) {
+					boolean stopped = this.stopped;
+					ServerSocket ss = this.ss;
 					if (!stopped && !ss.isClosed()) {
 						e.printStackTrace();
 					} else {
@@ -165,30 +173,45 @@ public class WebServer {
 			if (ss != null) {
 				ss.close();
 			}
-			logger.log(Level.INFO, "Server " + getBeautifulName() + " is done");
-		}
 
+		}
+		logger.log(Level.INFO, "Server " + getBeautifulName() + " is done");
 	}
 
-	public void run() {
-		
-		if (!running && (ss == null || ss.isClosed())) {
+	public void run() throws IOException {
+
+		if (!running) {
 			synchronized (this) {
-				if (!running && (ss == null || ss.isClosed())) {
+				if (!running) {
+
+					if (startThread != null) {
+						try {
+							logger.log(Level.INFO, "Wait starting thread to join");
+							startThread.join();
+							logger.log(Level.INFO, "Done waitig starting thread");
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+							throw new IOException(e);
+						}
+					}
+					this.ss = new ServerSocket(port, BACKLOG);
 					stopped = false;
 					running = true;
-					logger.log(Level.INFO, "Running server " + getBeautifulName());
-					new Thread(new Runnable() {
+					startThread = new Thread(new Runnable() {
 
 						@Override
 						public void run() {
+
 							try {
 								WebServer.this.runBlocking();
-							} catch (IOException e) {
-								e.printStackTrace();
+							} catch (Exception e) {
+								logger.log(Level.SEVERE, e);
 							}
+
 						}
-					}).start();
+					});
+					startThread.start();
+
 				} else {
 					logger.log(Level.WARNING, "Can not run already running server " + getBeautifulName());
 
@@ -210,6 +233,7 @@ public class WebServer {
 					try {
 						ServerSocket ss = this.ss;
 						if (ss != null && !ss.isClosed()) {
+							logger.log(Level.INFO, "Closing socket");
 							ss.close();
 							logger.log(Level.INFO, "Server " + getBeautifulName() + " was stopped");
 						}
@@ -222,6 +246,7 @@ public class WebServer {
 			logger.log(Level.WARNING, "Can't stop server " + getBeautifulName() + ". It wasn't running.");
 
 		}
+		logger.log(Level.INFO, "Done stopping " + getBeautifulName());
 
 	}
 

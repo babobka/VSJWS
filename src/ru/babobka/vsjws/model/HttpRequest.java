@@ -11,7 +11,6 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-
 /**
  * Created by dolgopolov.a on 30.12.15.
  */
