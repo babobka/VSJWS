@@ -46,8 +46,6 @@ public class WebServer {
 
 	private static final int BACKLOG = 10;
 
-	private volatile boolean stopped = true;
-
 	private volatile boolean running = false;
 
 	private final HttpSession httpSession;
@@ -145,17 +143,15 @@ public class WebServer {
 			if (listener != null) {
 				listener.onStart(name, port);
 			}
-
-			while (!stopped) {
+			ServerSocket ss = this.ss;
+			while (running) {
 				try {
 					Socket s = ss.accept();
 					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
 							webContentFolder, onExceptionListener));
 				} catch (IOException e) {
-					boolean stopped = this.stopped;
-					ServerSocket ss = this.ss;
-					if (!stopped && !ss.isClosed()) {
+					if (running && !ss.isClosed()) {
 						e.printStackTrace();
 					} else {
 						threadPool.shutdown();
@@ -194,8 +190,7 @@ public class WebServer {
 							throw new IOException(e);
 						}
 					}
-					this.ss = new ServerSocket(port, BACKLOG);
-					stopped = false;
+					ss = new ServerSocket(port, BACKLOG);
 					running = true;
 					startThread = new Thread(new Runnable() {
 
@@ -228,14 +223,11 @@ public class WebServer {
 		if (running) {
 			synchronized (this) {
 				if (running) {
-					stopped = true;
 					running = false;
 					try {
 						ServerSocket ss = this.ss;
 						if (ss != null && !ss.isClosed()) {
-							logger.log(Level.INFO, "Closing socket");
 							ss.close();
-							logger.log(Level.INFO, "Server " + getBeautifulName() + " was stopped");
 						}
 					} catch (IOException e) {
 						e.printStackTrace();
@@ -280,10 +272,6 @@ public class WebServer {
 
 	public static void main(String[] args) {
 		System.out.println("VSJWS");
-	}
-
-	public boolean isStopped() {
-		return stopped;
 	}
 
 	public boolean isRunning() {

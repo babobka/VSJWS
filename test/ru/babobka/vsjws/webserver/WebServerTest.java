@@ -18,7 +18,7 @@ public class WebServerTest {
 
 	private static final String LOG_FOLDER = "server_log";
 
-	private int tests = 10;
+	private int tests = 25;
 
 	private WebServer webServer;
 
@@ -47,7 +47,7 @@ public class WebServerTest {
 	public void testStop() throws IOException {
 		for (int i = 0; i < tests; i++) {
 			webServer.stop();
-			assertTrue(webServer.isStopped());
+			assertFalse(webServer.isRunning());
 		}
 	}
 
@@ -58,7 +58,7 @@ public class WebServerTest {
 			assertTrue(webServer.isRunning());
 			Thread.sleep(200);
 			webServer.stop();
-			assertTrue(webServer.isStopped());
+			assertFalse(webServer.isRunning());
 		}
 	}
 
@@ -68,7 +68,7 @@ public class WebServerTest {
 			webServer.run();
 			assertTrue(webServer.isRunning());
 			webServer.stop();
-			assertTrue(webServer.isStopped());
+			assertFalse(webServer.isRunning());
 		}
 	}
 }
