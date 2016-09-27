@@ -18,6 +18,14 @@ public class RawHttpRequest {
 
 	private String firstLine;
 
+	public RawHttpRequest(String firstLine, Map<String, String> headers, String body) {
+		super();
+		this.body = body;
+		this.firstLine = firstLine;
+		if (headers != null)
+			this.headers.putAll(headers);
+	}
+
 	public RawHttpRequest(InputStream is) throws IOException {
 		int row = 0;
 		BufferedReader br = new BufferedReader(new InputStreamReader(is));

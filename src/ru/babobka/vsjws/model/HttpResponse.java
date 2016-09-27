@@ -114,7 +114,12 @@ public class HttpResponse {
 						"You can not manually specify '" + key + "' header. It is restricted.");
 			}
 		}
-		otherHeaders.put(key, value);
+		if (key.endsWith(":")) {
+			otherHeaders.put(key, value);
+		} else {
+			otherHeaders.put(key+":", value);
+		}
+
 		return this;
 	}
 
@@ -185,7 +190,8 @@ public class HttpResponse {
 			localUrl = "http://" + localUrl;
 		}
 		if (url.matches(RegularExpressions.URL_PATTERN)) {
-			return textResponse("Redirection", ResponseCode.OK, ContentType.PLAIN).addHeader("Location", localUrl);
+			return textResponse("Redirection", ResponseCode.SEE_OTHER, ContentType.PLAIN).addHeader("Location",
+					localUrl);
 		} else {
 			throw new IllegalArgumentException("URL '" + url + "' is not valid");
 		}

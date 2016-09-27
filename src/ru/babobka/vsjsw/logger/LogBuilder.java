@@ -10,15 +10,11 @@ import java.util.logging.Logger;
 /**
  * Created by dolgopolov.a on 12.01.16.
  */
-class LogBuilder {
+interface LogBuilder {
 
-	private LogBuilder() {
+	static Logger build(String loggerName, String runningFolder, String prefix) throws IOException {
 
-	}
-
-	static Logger build(Class<?> clazz, String runningFolder, String prefix) throws IOException {
-
-		Logger logger = Logger.getLogger(clazz.getName());
+		Logger logger = Logger.getLogger(loggerName);
 		logger.setUseParentHandlers(false);
 		File folder = new File(runningFolder + File.separator);
 		if (!folder.exists()) {

@@ -6,16 +6,27 @@ package ru.babobka.vsjws.constant;
 
 public interface Method {
 
-    public String GET = "GET";
+	String GET = "GET";
 
-    public String POST = "POST";
+	String POST = "POST";
 
-    public String DELETE = "DELETE";
+	String DELETE = "DELETE";
 
-    public String PUT = "PUT";
-    
-    public String HEAD = "HEAD";
-    
-    public String PATCH = "PATCH";
+	String PUT = "PUT";
+
+	String HEAD = "HEAD";
+
+	String PATCH = "PATCH";
+
+	String[] ARRAY = { GET, POST, DELETE, PUT, HEAD, PATCH };
+
+	static boolean isValidMethod(String inputMethod) {
+		for (String method : ARRAY) {
+			if (inputMethod.equals(method)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 }

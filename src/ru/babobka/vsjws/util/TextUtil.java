@@ -14,6 +14,10 @@ public interface TextUtil {
 		return errors.toString();
 	}
 
+	public static String beautifyServerName(String serverName, int port) {
+		return "'" + serverName + "':" + port;
+	}
+
 	public static int tryParseInt(String value) {
 		return tryParseInt(value, 0);
 	}

@@ -20,7 +20,7 @@ public interface HttpUtil {
 
 	public static void writeResponse(OutputStream os, HttpResponse response, boolean noContent) throws IOException {
 		if (response != null) {
-			StringBuilder header = new StringBuilder(HttpRequest.PROTOCOL + " " + response.getResponseCode() + "\n");
+			StringBuilder headerBuilder = new StringBuilder(HttpRequest.PROTOCOL + " " + response.getResponseCode() + "\n");
 			Map<String, String> headers = new LinkedHashMap<>();
 			headers.put(HttpResponse.RestrictedHeader.SERVER + ":", "vsjws");
 			headers.put(HttpResponse.RestrictedHeader.CONTENT_TYPE + ":", response.getContentType());
@@ -30,13 +30,14 @@ public interface HttpUtil {
 			headers.putAll(response.getHttpCookieHeaders());
 			headers.putAll(response.getOtherHeaders());
 			for (Map.Entry<String, String> entry : headers.entrySet()) {
-				header.append(entry.getKey());
-				header.append(" ");
-				header.append(entry.getValue());
-				header.append("\r\n");
+				headerBuilder.append(entry.getKey());
+				headerBuilder.append(" ");
+				headerBuilder.append(entry.getValue());
+				headerBuilder.append("\r\n");
 			}
-			header.append("\r\n");
-			os.write(header.toString().getBytes(HttpResponse.MAIN_ENCODING));
+			System.out.println(headerBuilder);
+			headerBuilder.append("\r\n");
+			os.write(headerBuilder.toString().getBytes(HttpResponse.MAIN_ENCODING));
 			if (!noContent) {
 				if (response.getFile() != null) {
 					byte[] buf = new byte[8192];
@@ -123,10 +124,12 @@ public interface HttpUtil {
 
 	public static Map<String, String> getCookies(String cookiesLine) {
 		Map<String, String> cookies = new HashMap<>();
-		String[] cookiesArray = cookiesLine.substring(0, cookiesLine.length()).split("; ");
-		for (int i = 0; i < cookiesArray.length; i++) {
-			String[] cookie = cookiesArray[i].split("=");
-			cookies.put(cookie[0], cookie[1]);
+		if (!cookiesLine.isEmpty()) {
+			String[] cookiesArray = cookiesLine.substring(0, cookiesLine.length()).split("; ");
+			for (int i = 0; i < cookiesArray.length; i++) {
+				String[] cookie = cookiesArray[i].split("=");
+				cookies.put(cookie[0], cookie[1]);
+			}
 		}
 		return cookies;
 	}

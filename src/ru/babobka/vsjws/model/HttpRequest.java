@@ -6,10 +6,11 @@ import ru.babobka.vsjws.exception.InvalidContentLengthException;
 import ru.babobka.vsjws.util.HttpUtil;
 import ru.babobka.vsjws.util.TextUtil;
 
-import java.io.*;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
+
 
 /**
  * Created by dolgopolov.a on 30.12.15.
@@ -17,6 +18,8 @@ import java.util.Map;
 public class HttpRequest {
 
 	public static final String CONTENT_LENGTH_HEADER = "Content-Length";
+
+	public static final String HOST_HEADER = "Host";
 
 	public static final String SESSION_ID_HEADER = "X-Session-Id";
 
@@ -42,8 +45,14 @@ public class HttpRequest {
 
 	private final InetAddress address;
 
-	public HttpRequest(InetAddress address, RawHttpRequest rawHttpRequest, HttpSession httpSession) throws IOException {
+	public HttpRequest(InetAddress address, RawHttpRequest rawHttpRequest, HttpSession httpSession) {
 		this.headers.putAll(rawHttpRequest.getHeaders());
+		if (!headers.containsKey(HOST_HEADER)) {
+			throw new IllegalArgumentException("Header 'Host' was not set");
+		}
+		if (rawHttpRequest.getFirstLine() == null) {
+			throw new IllegalArgumentException("First line is empty");
+		}
 		String[] firstLineArray = rawHttpRequest.getFirstLine().split(" ");
 		if (firstLineArray.length < 3) {
 			throw new IllegalArgumentException("Bad first line");
@@ -52,16 +61,16 @@ public class HttpRequest {
 		this.contentLength = TextUtil.tryParseInt(headers.get(HttpRequest.CONTENT_LENGTH_HEADER), -1);
 		if (method == null) {
 			throw new IllegalArgumentException("HTTP method was not specified");
+		} else if (!Method.isValidMethod(method)) {
+			throw new IllegalArgumentException("HTTP method is invalid");
 		} else if (isMethodWithContent(method) && contentLength == -1) {
-			throw new InvalidContentLengthException("'Content-Length' header wasn't set properly");
-		} else if (contentLength < 0) {
 			throw new InvalidContentLengthException("'Content-Length' header wasn't set properly");
 		}
 		this.uri = firstLineArray[1];
 		if (!firstLineArray[2].equals(PROTOCOL)) {
 			throw new BadProtocolSpecifiedException();
 		}
-		this.cookies.putAll(HttpUtil.getCookies(rawHttpRequest.getHeaders().get("Cookie")));
+		this.cookies.putAll(HttpUtil.getCookies(rawHttpRequest.getHeaders().getOrDefault("Cookie", "")));
 		this.body = rawHttpRequest.getBody();
 		this.params.putAll(HttpUtil.getParams(body));
 		this.urlParams.putAll(HttpUtil.getUriParams(uri));

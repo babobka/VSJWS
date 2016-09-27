@@ -10,8 +10,8 @@ public class SimpleLogger {
 
 	private final Logger logger;
 
-	public SimpleLogger(Class<?> clazz, String runningFolder, String prefix) throws IOException {
-		logger = LogBuilder.build(clazz, runningFolder, prefix);
+	public SimpleLogger(String loggerName, String runningFolder, String prefix) throws IOException {
+		logger = LogBuilder.build(loggerName, runningFolder, prefix);
 	}
 
 	public void log(Level level, String message) {

@@ -6,14 +6,15 @@ import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.listener.OnServerStartListener;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
+import ru.babobka.vsjws.util.TextUtil;
 import ru.babobka.vsjws.webcontroller.WebController;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -23,7 +24,7 @@ import java.util.logging.Level;
  */
 public class WebServer {
 
-	public final Map<String, WebController> controllerHashMap = new HashMap<>();
+	public final Map<String, WebController> controllerHashMap = new ConcurrentHashMap<>();
 
 	private final String name;
 
@@ -37,13 +38,15 @@ public class WebServer {
 
 	private static final int DEFAULT_SESSION_TIME_OUT_SEC = 900;
 
-	private static final int SOCKET_READ_TIMEOUT_MILLIS = 1000;
+	private static final int SOCKET_READ_TIMEOUT_MILLIS = 2000;
+
+	private static final int THREAD_POOL_SIZE = 10;
 
 	private static final int BACKLOG = 10;
 
-	private volatile boolean stopped;
+	private volatile boolean stopped = true;
 
-	private volatile boolean running;
+	private volatile boolean running = false;
 
 	private final HttpSession httpSession;
 
@@ -57,17 +60,14 @@ public class WebServer {
 
 	private final int port;
 
-	public WebServer(String name, int port, String webContentFolder,
-			String logFolder) throws IOException {
-		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder,
-				logFolder);
+	public WebServer(String name, int port, String webContentFolder, String logFolder) throws IOException {
+		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder, logFolder);
 	}
 
-	public WebServer(String name, int port, Integer sessionTimeOutSeconds,
-			String webContentFolder, String logFolder) throws IOException {
+	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String webContentFolder, String logFolder)
+			throws IOException {
 		if (port < 0 || port > Short.MAX_VALUE) {
-			throw new IllegalArgumentException(
-					"Port must be in range [0;65536)");
+			throw new IllegalArgumentException("Port must be in range [0;65536)");
 		}
 		if (sessionTimeOutSeconds != null && sessionTimeOutSeconds < 0) {
 			throw new IllegalArgumentException("Session time out must be > 0");
@@ -75,20 +75,22 @@ public class WebServer {
 		if (name == null) {
 			throw new IllegalArgumentException("Web server name is null");
 		} else if (!name.matches(RegularExpressions.FILE_NAME_PATTERN)) {
-			throw new IllegalArgumentException(
-					"Web server name must contain letters,numbers and spaces only");
+			throw new IllegalArgumentException("Web server name must contain letters,numbers and spaces only");
 		}
 		if (logFolder == null) {
 			throw new IllegalArgumentException("Log folder is null");
 		}
 		if (webContentFolder != null) {
 			File folder = new File(webContentFolder);
-			if (!folder.exists()) {
-				throw new IllegalArgumentException(
-						"Web content folder doesn't exist");
+			if (folder.isDirectory()) {
+				if (!folder.exists()) {
+					folder.mkdirs();
+				}
+			} else {
+				throw new IllegalArgumentException("'webContentFolder' is invalid");
 			}
 		}
-		logger = new SimpleLogger(WebServer.class, logFolder, name);
+		logger = new SimpleLogger(name + ":" + port, logFolder, name);
 		this.name = name;
 		this.webContentFolder = webContentFolder;
 		this.sessionTimeOutSeconds = sessionTimeOutSeconds;
@@ -100,11 +102,9 @@ public class WebServer {
 			this.httpSession = new HttpSession(sessionTimeOutSeconds);
 		}
 
-		logger.log(Level.INFO, "Web server name:\t" + name);
-		logger.log(Level.INFO, "Web server port:\t" + port);
+		logger.log(Level.INFO, "Web server name:\t" + getBeautifulName());
 		logger.log(Level.INFO, "Web server log folder:\t" + logFolder);
-		logger.log(Level.INFO, "Web server content folder:\t"
-				+ webContentFolder);
+		logger.log(Level.INFO, "Web server content folder:\t" + webContentFolder);
 	}
 
 	public OnServerStartListener getOnServerStartListener() {
@@ -131,71 +131,106 @@ public class WebServer {
 		return logFolder;
 	}
 
-	public void run() throws IOException {
+	private void runBlocking() throws IOException {
 
-		if (!running) {
+		try {
+			this.ss = new ServerSocket(port, BACKLOG);
+			threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+			OnServerStartListener listener = onServerStartListener;
+			if (listener != null) {
+				listener.onStart(name, port);
+			}
+			while (!stopped) {
+				try {
+					Socket s = ss.accept();
+					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
+					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
+							webContentFolder, onExceptionListener));
+				} catch (IOException e) {
+					if (!stopped && !ss.isClosed()) {
+						e.printStackTrace();
+					} else {
+						threadPool.shutdown();
+						break;
+					}
+				}
+
+			}
+		} finally {
+			ExecutorService threadPool = this.threadPool;
+			if (threadPool != null) {
+				threadPool.shutdown();
+			}
+			ServerSocket ss = this.ss;
+			if (ss != null) {
+				ss.close();
+			}
+			logger.log(Level.INFO, "Server " + getBeautifulName() + " is done");
+		}
+
+	}
+
+	public void run() {
+		
+		if (!running && (ss == null || ss.isClosed())) {
 			synchronized (this) {
-				if (!running) {
+				if (!running && (ss == null || ss.isClosed())) {
 					stopped = false;
 					running = true;
-				} else {
-					return;
-				}
-			}
+					logger.log(Level.INFO, "Running server " + getBeautifulName());
+					new Thread(new Runnable() {
 
-			try {
-				this.ss = new ServerSocket(port, BACKLOG);
-				threadPool = Executors.newFixedThreadPool(10);
-				OnServerStartListener listener = onServerStartListener;
-				if (listener != null) {
-					listener.onStart(name, port);
-				}
-				while (!stopped) {
-					try {
-						Socket s = ss.accept();
-						s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
-						threadPool.execute(new SocketProcessorRunnable(s,
-								controllerHashMap, httpSession, logger,
-								webContentFolder, onExceptionListener));
-					} catch (IOException e) {
-						if (!stopped) {
-							e.printStackTrace();
-						} else {
-							threadPool.shutdown();
-							break;
+						@Override
+						public void run() {
+							try {
+								WebServer.this.runBlocking();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
 						}
-					}
+					}).start();
+				} else {
+					logger.log(Level.WARNING, "Can not run already running server " + getBeautifulName());
 
-				}
-			} finally {
-				running = false;
-				stopped = true;
-				if (threadPool != null) {
-					threadPool.shutdown();
-				}
-				if (this.ss != null) {
-					this.ss.close();
 				}
 			}
-
+		} else {
+			logger.log(Level.WARNING, "Can not run already running server " + getBeautifulName());
 		}
 
 	}
 
 	public void stop() {
-		stopped = true;
-		running = false;
-		try {
-			if (ss != null) {
-				ss.close();
+		logger.log(Level.INFO, "Try to stop server " + getBeautifulName());
+		if (running) {
+			synchronized (this) {
+				if (running) {
+					stopped = true;
+					running = false;
+					try {
+						ServerSocket ss = this.ss;
+						if (ss != null && !ss.isClosed()) {
+							ss.close();
+							logger.log(Level.INFO, "Server " + getBeautifulName() + " was stopped");
+						}
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		} else {
+			logger.log(Level.WARNING, "Can't stop server " + getBeautifulName() + ". It wasn't running.");
+
 		}
+
 	}
 
 	public int getPort() {
 		return port;
+	}
+
+	public String getBeautifulName() {
+		return TextUtil.beautifyServerName(name, port);
 	}
 
 	public HttpSession getHttpSession() {
@@ -214,13 +249,20 @@ public class WebServer {
 		this.onExceptionListener = onExceptionListener;
 	}
 
-	public void setOnServerStartListener(
-			OnServerStartListener onServerStartListener) {
+	public void setOnServerStartListener(OnServerStartListener onServerStartListener) {
 		this.onServerStartListener = onServerStartListener;
 	}
 
 	public static void main(String[] args) {
 		System.out.println("VSJWS");
+	}
+
+	public boolean isStopped() {
+		return stopped;
+	}
+
+	public boolean isRunning() {
+		return running;
 	}
 
 }
