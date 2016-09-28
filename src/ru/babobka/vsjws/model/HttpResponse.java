@@ -17,18 +17,17 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.tika.Tika;
-
-/**
- * Created by dolgopolov.a on 30.12.15.
- */
-
 import org.json.JSONObject;
+
+import com.google.gson.Gson;
 
 import ru.babobka.vsjws.constant.ContentType;
 import ru.babobka.vsjws.constant.RegularExpressions;
 import ru.babobka.vsjws.util.TextUtil;
 
 public class HttpResponse {
+
+	private static final Gson GSON = new Gson();
 
 	public enum RestrictedHeader {
 
@@ -48,7 +47,7 @@ public class HttpResponse {
 
 	public enum ResponseCode {
 
-		OK("200 Ok"), ACCEPTED("202 Accepted"),
+		OK("200 Ok"), ACCEPTED("202 Accepted"), NO_CONTENT("204 No content"),
 
 		MOVED_PERMANENTLY("301 Moved permanently"),
 
@@ -182,12 +181,16 @@ public class HttpResponse {
 		}
 	}
 
-	public static HttpResponse jsonResponse(JSONObject json, ResponseCode code) {
-		return textResponse(json.toString(), code, ContentType.JSON);
+	public static HttpResponse jsonResponse(Object object) {
+		return jsonResponse(object, ResponseCode.OK);
 	}
 
-	public static HttpResponse jsonResponse(JSONObject json) {
-		return jsonResponse(json.toString(), ResponseCode.OK);
+	public static HttpResponse jsonResponse(Object object, ResponseCode code) {
+		if (object == null) {
+			throw new IllegalArgumentException("JSON object can not be null");
+		} else {
+			return textResponse(GSON.toJson(object).toString(), code, ContentType.JSON);
+		}
 	}
 
 	public static HttpResponse jsonResponse(String json, ResponseCode code) {
@@ -266,6 +269,10 @@ public class HttpResponse {
 	public static HttpResponse textResponse(Object content, ResponseCode code, String contentType) {
 
 		return textResponse(content.toString(), code, contentType);
+	}
+
+	public static HttpResponse noContent() {
+		return textResponse("", ResponseCode.NO_CONTENT, ContentType.PLAIN);
 	}
 
 	public static HttpResponse ok() {
