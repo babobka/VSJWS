@@ -84,13 +84,10 @@ public class WebServer {
 		}
 		if (webContentFolder != null) {
 			File folder = new File(webContentFolder);
-			if (folder.isDirectory()) {
-				if (!folder.exists()) {
-					folder.mkdirs();
-				}
-			} else {
-				throw new IllegalArgumentException("'webContentFolder' is invalid");
+			if (!folder.exists()) {
+				folder.mkdirs();
 			}
+
 		}
 		logger = new SimpleLogger(name + ":" + port, logFolder, name);
 		this.name = name;

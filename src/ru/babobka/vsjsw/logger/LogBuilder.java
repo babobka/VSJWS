@@ -15,7 +15,6 @@ interface LogBuilder {
 	static Logger build(String loggerName, String runningFolder, String prefix) throws IOException {
 
 		Logger logger = Logger.getLogger(loggerName);
-		logger.setUseParentHandlers(false);
 		File folder = new File(runningFolder + File.separator);
 		if (!folder.exists()) {
 			folder.mkdir();
@@ -29,6 +28,7 @@ interface LogBuilder {
 		logger.addHandler(ch);
 		fh.setFormatter(formatter);
 		logger.addHandler(fh);
+		logger.setUseParentHandlers(false);
 		return logger;
 
 	}
