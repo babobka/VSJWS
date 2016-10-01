@@ -14,13 +14,13 @@ interface LogBuilder {
 
 	static Logger build(String loggerName, String runningFolder, String prefix) throws IOException {
 
-		Logger logger = Logger.getLogger(loggerName);
+		Logger logger = Logger.getLogger(loggerName + "_" + System.currentTimeMillis());
 		File folder = new File(runningFolder + File.separator);
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
 		String fileName = folder.getAbsolutePath() + File.separator + prefix + "_" + System.currentTimeMillis()
-				+ ".log"; 
+				+ ".log";
 		FileHandler fh = new FileHandler(fileName);
 		Handler ch = new ConsoleHandler();
 		LogFormatter formatter = new LogFormatter();

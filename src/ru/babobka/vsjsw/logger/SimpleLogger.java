@@ -11,7 +11,7 @@ public class SimpleLogger {
 	private final Logger logger;
 
 	public SimpleLogger(String loggerName, String runningFolder, String prefix) throws IOException {
-		logger = LogBuilder.build(loggerName, runningFolder, prefix);
+		logger = LogBuilder.build(loggerName+System.currentTimeMillis(), runningFolder, prefix);
 	}
 
 	public void log(Level level, String message) {

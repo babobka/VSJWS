@@ -182,7 +182,8 @@ public class WebServer {
 								startThread.join();
 							logger.log(Level.INFO, "Done waitig starting thread");
 						} catch (InterruptedException e) {
-							throw new IOException(e);
+							startThread.interrupt();
+
 						}
 					}
 					ss = new ServerSocket(port, BACKLOG);
