@@ -178,4 +178,13 @@ public class HttpRequest {
 		return true;
 	}
 
+	@Override
+	public String toString() {
+		return "HttpRequest [method=" + method + ", uri=" + uri + ", body=" + body + ", contentLength=" + contentLength
+				+ ", params=" + params + ", urlParams=" + urlParams + ", cookies=" + cookies + ", headers=" + headers
+				+ ", httpSession=" + httpSession + ", address=" + address + "]";
+	}
+
+	
+	
 }

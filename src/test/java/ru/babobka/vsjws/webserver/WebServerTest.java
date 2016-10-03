@@ -16,9 +16,9 @@ public class WebServerTest {
 
 	private static final String SERVER_NAME = "Sample server";
 
-	private static final String LOG_FOLDER = "server_log";
+	private static final String LOG_FOLDER = "/Users/bbk/Documents/nodes/log";
 
-	private int tests = 25;
+	private int tests = 15;
 
 	private WebServerExecutor serverExecutor;
 

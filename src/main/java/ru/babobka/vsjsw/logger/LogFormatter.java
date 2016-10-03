@@ -1,4 +1,4 @@
-package ru.babobka.vsjws.logger;
+package ru.babobka.vsjsw.logger;
 
 /**
  * Created by dolgopolov.a on 12.01.16.

@@ -1,4 +1,4 @@
-package ru.babobka.vsjws.logger;
+package ru.babobka.vsjsw.logger;
 
 import java.io.File;
 import java.io.IOException;

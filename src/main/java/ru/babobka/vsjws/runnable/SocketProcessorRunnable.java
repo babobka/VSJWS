@@ -1,10 +1,10 @@
 package ru.babobka.vsjws.runnable;
 
+import ru.babobka.vsjsw.logger.SimpleLogger;
 import ru.babobka.vsjws.constant.Method;
 import ru.babobka.vsjws.exception.BadProtocolSpecifiedException;
 import ru.babobka.vsjws.exception.InvalidContentLengthException;
 import ru.babobka.vsjws.listener.OnExceptionListener;
-import ru.babobka.vsjws.logger.SimpleLogger;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
@@ -42,6 +42,7 @@ public class SocketProcessorRunnable implements Runnable {
 		this.logger = logger;
 		this.staticResourcesController = new StaticResourcesController(webContentFolder);
 		this.webContentFolder = webContentFolder;
+
 	}
 
 	@Override
@@ -86,6 +87,9 @@ public class SocketProcessorRunnable implements Runnable {
 			if (onExceptionListener != null) {
 				try {
 					response = onExceptionListener.onException(e);
+					if (response == null) {
+						response = HttpResponse.exceptionResponse(e);
+					}
 				} catch (Exception e1) {
 					logger.log(Level.SEVERE, e1);
 					response = HttpResponse.exceptionResponse(e1);
@@ -95,6 +99,7 @@ public class SocketProcessorRunnable implements Runnable {
 			}
 		} finally {
 			try {
+
 				HttpUtil.writeResponse(s.getOutputStream(), response, noContent);
 			} catch (IOException e1) {
 				logger.log(Level.SEVERE, e1);
@@ -104,6 +109,7 @@ public class SocketProcessorRunnable implements Runnable {
 			} catch (IOException e) {
 				logger.log(Level.SEVERE, e);
 			}
+
 		}
 	}
 

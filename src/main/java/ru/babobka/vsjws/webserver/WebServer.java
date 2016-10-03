@@ -1,9 +1,9 @@
 package ru.babobka.vsjws.webserver;
 
+import ru.babobka.vsjsw.logger.SimpleLogger;
 import ru.babobka.vsjws.constant.RegularExpressions;
 import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.listener.OnServerStartListener;
-import ru.babobka.vsjws.logger.SimpleLogger;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
 import ru.babobka.vsjws.util.TextUtil;
@@ -44,7 +44,7 @@ public class WebServer {
 
 	private static final int THREAD_POOL_SIZE = 10;
 
-	private static final int BACKLOG = 10;
+	private static final int BACKLOG = 25;
 
 	private volatile boolean running = false;
 
@@ -133,6 +133,7 @@ public class WebServer {
 		ServerSocket localServerSocket = null;
 		try {
 			ss = new ServerSocket(port, BACKLOG);
+
 			localServerSocket = ss;
 			logger.log(Level.INFO, "Running server " + getFullName());
 			threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
@@ -144,12 +145,12 @@ public class WebServer {
 			while (running) {
 				try {
 					Socket s = localServerSocket.accept();
-					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
+					//s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
 							webContentFolder, onExceptionListener));
 				} catch (IOException e) {
 					if (running && !localServerSocket.isClosed()) {
-						System.out.println(running + " " + localServerSocket.isClosed());
+
 						logger.log(e);
 					} else {
 						threadPool.shutdown();
@@ -179,7 +180,7 @@ public class WebServer {
 		} catch (IOException e) {
 			logger.log(e);
 		}
-		
+
 	}
 
 	public int getPort() {
