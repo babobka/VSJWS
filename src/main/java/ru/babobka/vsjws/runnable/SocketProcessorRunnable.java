@@ -1,10 +1,10 @@
 package ru.babobka.vsjws.runnable;
 
-import ru.babobka.vsjsw.logger.SimpleLogger;
 import ru.babobka.vsjws.constant.Method;
 import ru.babobka.vsjws.exception.BadProtocolSpecifiedException;
 import ru.babobka.vsjws.exception.InvalidContentLengthException;
 import ru.babobka.vsjws.listener.OnExceptionListener;
+import ru.babobka.vsjws.logger.SimpleLogger;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;

@@ -1,4 +1,4 @@
-package ru.babobka.vsjsw.logger;
+package ru.babobka.vsjws.logger;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -6,12 +6,14 @@ import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import ru.babobka.vsjws.logger.LogBuilder;
+
 public class SimpleLogger {
 
 	private final Logger logger;
 
 	public SimpleLogger(String loggerName, String runningFolder, String prefix) throws IOException {
-		logger = LogBuilder.build(loggerName+System.currentTimeMillis(), runningFolder, prefix);
+		logger = LogBuilder.build(loggerName + System.currentTimeMillis(), runningFolder, prefix);
 	}
 
 	public void log(Level level, String message) {
@@ -34,7 +36,7 @@ public class SimpleLogger {
 	public void log(Exception e) {
 		logger.log(Level.SEVERE, getStringFromException(e));
 	}
- 
+
 	private static String getStringFromException(Exception ex) {
 		StringWriter errors = new StringWriter();
 		ex.printStackTrace(new PrintWriter(errors));

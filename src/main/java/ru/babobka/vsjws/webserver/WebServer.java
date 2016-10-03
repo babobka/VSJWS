@@ -1,9 +1,9 @@
 package ru.babobka.vsjws.webserver;
 
-import ru.babobka.vsjsw.logger.SimpleLogger;
 import ru.babobka.vsjws.constant.RegularExpressions;
 import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.listener.OnServerStartListener;
+import ru.babobka.vsjws.logger.SimpleLogger;
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
 import ru.babobka.vsjws.util.TextUtil;
