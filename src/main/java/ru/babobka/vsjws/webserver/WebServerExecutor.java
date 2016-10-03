@@ -43,7 +43,6 @@ public class WebServerExecutor {
 					starting = true;
 					if (startThread != null) {
 						try {
-							server.getLogger().log("Wait starting thread to join");
 							if (startThread.isAlive())
 								startThread.join();
 							server.getLogger().log("Done waitig starting thread");

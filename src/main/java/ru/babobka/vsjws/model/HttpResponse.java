@@ -47,46 +47,57 @@ public class HttpResponse {
 
 	public enum ResponseCode {
 
-		OK("200 Ok"), ACCEPTED("202 Accepted"), NO_CONTENT("204 No content"),
+		OK(200, "Ok"), ACCEPTED(202, "Accepted"), NO_CONTENT(204, "No content"),
 
-		MOVED_PERMANENTLY("301 Moved permanently"),
+		MOVED_PERMANENTLY(301, "Moved permanently"),
 
-		MOVED_TEMPORARILY("302 Moved temporarily"),
+		MOVED_TEMPORARILY(302, "Moved temporarily"),
 
-		SEE_OTHER("303 See other"),
+		SEE_OTHER(303, "See other"),
 
-		NOT_FOUND("404 Not found"),
+		NOT_FOUND(404, "Not found"),
 
-		UNAUTHORIZED("401 Unauthorized"),
+		UNAUTHORIZED(401, "Unauthorized"),
 
-		METHOD_NOT_ALLOWED("405 Method not allowed"),
+		METHOD_NOT_ALLOWED(405, "Method not allowed"),
 
-		BAD_REQUEST("400 Bad request"),
+		BAD_REQUEST(400, "Bad request"),
 
-		FORBIDDEN("403 Forbidden"),
+		FORBIDDEN(403, "Forbidden"),
 
-		INTERNAL_SERVER_ERROR("500 Internal server error"),
+		INTERNAL_SERVER_ERROR(500, "Internal server error"),
 
-		NOT_IMPLEMENTED("501 Not implemented"),
+		NOT_IMPLEMENTED(501, "Not implemented"),
 
-		SERVICE_UNAVAILABLE("503 Service unavailable"),
+		SERVICE_UNAVAILABLE(503, "Service unavailable"),
 
-		LENGTH_REQUIRED("411 Length required"),
+		LENGTH_REQUIRED(411, "Length required"),
 
-		HTTP_VERSION_NOT_SUPPORTED("505 HTTP version not supported"),
+		HTTP_VERSION_NOT_SUPPORTED(505, "HTTP version not supported"),
 
-		REQUEST_TIMEOUT("408 Request Timeout");
+		REQUEST_TIMEOUT(408, "Request Timeout");
 
 		private final String text;
+		private final int code;
 
-		private ResponseCode(String text) {
+		private ResponseCode(int code, String text) {
 			this.text = text;
+			this.code = code;
+		}
+
+		public int getCode() {
+			return code;
+		}
+
+		public String getText() {
+			return text;
 		}
 
 		@Override
 		public String toString() {
-			return text;
+			return code + " " + text;
 		}
+
 	}
 
 	public static final Charset MAIN_ENCODING = Charset.forName("UTF-8");

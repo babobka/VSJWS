@@ -145,12 +145,11 @@ public class WebServer {
 			while (running) {
 				try {
 					Socket s = localServerSocket.accept();
-					//s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
+					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
 							webContentFolder, onExceptionListener));
 				} catch (IOException e) {
 					if (running && !localServerSocket.isClosed()) {
-
 						logger.log(e);
 					} else {
 						threadPool.shutdown();
@@ -213,10 +212,6 @@ public class WebServer {
 
 	public void setOnServerStartListener(OnServerStartListener onServerStartListener) {
 		this.onServerStartListener = onServerStartListener;
-	}
-
-	public static void main(String[] args) {
-		System.out.println("VSJWS");
 	}
 
 	public boolean isRunning() {
