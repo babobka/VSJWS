@@ -3,6 +3,7 @@ package ru.babobka.vsjws.model;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
@@ -17,6 +18,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.tika.Tika;
+import org.apache.tika.io.IOUtils;
 import org.json.JSONObject;
 
 import com.google.gson.Gson;
@@ -174,9 +176,35 @@ public class HttpResponse {
 
 	}
 
+	public static HttpResponse resourceResponse(String fileName, ResponseCode code) throws IOException {
+		InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(fileName);
+		if (is != null) {
+			byte[] bytes = IOUtils.toByteArray(is);
+			return new HttpResponse(code, tika.detect(bytes), bytes, null, bytes.length);
+		} else {
+			throw new FileNotFoundException();
+		}
+
+	}
+
+	public static HttpResponse resourceResponse(String fileName) throws IOException {
+		return resourceResponse(fileName, ResponseCode.OK);
+
+	}
+
+	public static HttpResponse resourceResponse(InputStream is, ResponseCode code) throws IOException {
+		byte[] bytes = IOUtils.toByteArray(is);
+		return new HttpResponse(code, tika.detect(bytes), bytes, null, bytes.length);
+
+	}
+
+	public static HttpResponse resourceResponse(InputStream is) throws IOException {
+		return resourceResponse(is, ResponseCode.OK);
+
+	}
+
 	public static HttpResponse fileResponse(File file) throws IOException {
 		return fileResponse(file, ResponseCode.OK);
-
 	}
 
 	public static HttpResponse redirectResponse(String url) {
@@ -220,18 +248,19 @@ public class HttpResponse {
 		return xmlResponse(xml, ResponseCode.OK);
 	}
 
-	public static HttpResponse xsltResponse(String xml, StreamSource xslSource) throws IOException {
-		return xsltResponse(xml, xslSource, ResponseCode.OK);
+	public static HttpResponse xsltResponse(String xml, String xslFileName) throws IOException {
+		return xsltResponse(xml, xslFileName, ResponseCode.OK);
 	}
 
-	public static HttpResponse xsltResponse(String xml, StreamSource xslSource, ResponseCode code) throws IOException {
+	public static HttpResponse xsltResponse(String xml, String xslFileName, ResponseCode code) throws IOException {
 		StringReader reader = null;
 		StringWriter writer = null;
 		try {
 			reader = new StringReader(xml);
 			writer = new StringWriter();
 			TransformerFactory tFactory = TransformerFactory.newInstance();
-			Transformer transformer = tFactory.newTransformer(xslSource);
+			Transformer transformer = tFactory.newTransformer(
+					new StreamSource(Thread.currentThread().getContextClassLoader().getResourceAsStream(xslFileName)));
 			transformer.transform(new StreamSource(reader), new StreamResult(writer));
 			String html = writer.toString();
 			return HttpResponse.textResponse(html, code, ContentType.HTML);

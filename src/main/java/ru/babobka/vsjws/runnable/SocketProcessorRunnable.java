@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -28,20 +29,18 @@ public class SocketProcessorRunnable implements Runnable {
 	private final Socket s;
 	private final HttpSession httpSession;
 	private final Map<String, WebController> controllerMap;
+	private final Map<String, OnExceptionListener> exceptionListenerMap;
 	private final SimpleLogger logger;
 	private final StaticResourcesController staticResourcesController;
-	private final OnExceptionListener onExceptionListener;
-	private final String webContentFolder;
 
 	public SocketProcessorRunnable(Socket s, Map<String, WebController> controllerMap, HttpSession httpSession,
-			SimpleLogger logger, String webContentFolder, OnExceptionListener onExceptionListener) throws IOException {
+			SimpleLogger logger, Map<String, OnExceptionListener> exceptionListenerMap) throws IOException {
 		this.s = s;
 		this.httpSession = httpSession;
 		this.controllerMap = controllerMap;
-		this.onExceptionListener = onExceptionListener;
+		this.exceptionListenerMap = exceptionListenerMap;
 		this.logger = logger;
-		this.staticResourcesController = new StaticResourcesController(webContentFolder);
-		this.webContentFolder = webContentFolder;
+		this.staticResourcesController = new StaticResourcesController();
 
 	}
 
@@ -66,7 +65,7 @@ public class SocketProcessorRunnable implements Runnable {
 					httpSession.create(sessionId);
 				}
 				WebController webController;
-				if (cleanedUri.startsWith("/web-content") && webContentFolder != null) {
+				if (cleanedUri.startsWith("/web-content")) {
 					webController = staticResourcesController;
 					response = webController.onGet(request);
 				} else if ((webController = controllerMap.get(cleanedUri)) != null) {
@@ -84,6 +83,7 @@ public class SocketProcessorRunnable implements Runnable {
 			response = HttpResponse.exceptionResponse(e, ResponseCode.REQUEST_TIMEOUT);
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, e);
+			OnExceptionListener onExceptionListener = exceptionListenerMap.get(e.getClass().getName());
 			if (onExceptionListener != null) {
 				try {
 					response = onExceptionListener.onException(e);

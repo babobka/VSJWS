@@ -24,8 +24,7 @@ public class WebServerTest {
 
 	@Before
 	public void init() throws IOException {
-		serverExecutor = new WebServerExecutor(
-				new WebServer(SERVER_NAME, PORT, SESSION_TIMEOUT_SECS, null, LOG_FOLDER));
+		serverExecutor = new WebServerExecutor(new WebServer(SERVER_NAME, PORT, SESSION_TIMEOUT_SECS, LOG_FOLDER));
 	}
 
 	@After

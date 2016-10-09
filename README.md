@@ -15,7 +15,7 @@ But also it has things that are not done yet:
 
 ## Code structure
 
-The main class is [WebServer](https://github.com/babobka/VSJWSEmbedded/blob/master/src/ru/babobka/vsjws/webserver/WebServer.java) . It has a run() method to run a server. There is a loop inside that waits for a socket to handle. Then, the socket goes to [SocketProcessorRunnable](https://github.com/babobka/VSJWSEmbedded/blob/master/src/ru/babobka/vsjws/runnable/SocketProcessorRunnable.java).
+The main class is [WebServer](https://github.com/babobka/VSJWS/tree/master/src/main/java/ru/babobka/vsjws/webserver) . It has a run() method to run a server. There is a loop inside that waits for a socket to handle. Then, the socket goes to [SocketProcessorRunnable](https://github.com/babobka/VSJWS/blob/master/src/main/java/ru/babobka/vsjws/runnable/SocketProcessorRunnable.java).
 SocketProcessorRunnable determines what web controller must process a given request using its URL and HTTP method.
 
 ## Code examples
@@ -25,19 +25,18 @@ SocketProcessorRunnable determines what web controller must process a given requ
 ### How to run a server
 
 ```java
+
 	private static final int PORT = 2512;
 
 	private static final int SESSION_TIMEOUT_SECS = 15 * 60;
-
-	private static final String WEB_CONTENT_FOLDER = "web-content";
 
 	private static final String SERVER_NAME = "Sample server";
 
 	private static final String LOG_FOLDER = "server_log";
 
 	public static void main(String[] args) throws IOException {
-		WebServer webServer = new WebServer(SERVER_NAME, PORT,
-				SESSION_TIMEOUT_SECS, WEB_CONTENT_FOLDER, LOG_FOLDER);
+
+		WebServer webServer = new WebServer(SERVER_NAME, PORT, SESSION_TIMEOUT_SECS, LOG_FOLDER);
 		// Adding controllers for a specified URLs
 		webServer.addController("json", new JsonTestController());
 		webServer.addController("xml", new XmlTestController());
@@ -47,8 +46,10 @@ SocketProcessorRunnable determines what web controller must process a given requ
 		webServer.addController("simpleForm", new SimpleFormController());
 		webServer.addController("xslt", new XsltTestController());
 		webServer.addController("cookies", new CookieTestController());
+		webServer.addController("redirect", new RedirectTestController());
 		webServer.addController("", new MainPageController());
-		webServer.run();
+		WebServerExecutor executor = new WebServerExecutor(webServer);
+		executor.run();
 	}
 
 ```
@@ -56,11 +57,12 @@ SocketProcessorRunnable determines what web controller must process a given requ
 ### How to code a web controller
 
 ```java
+
 public class MainPageController extends WebController {
 
 	@Override
-	public HttpResponse onGet(HttpRequest request) throws IOException {
-		return HttpResponse.fileResponse(new File("web-content/main.html"));
+	public HttpResponse onGet(HttpRequest request) throws IOException  {
+		return HttpResponse.resourceResponse("web-content/main.html");
 
 	}
 }

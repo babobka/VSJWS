@@ -9,7 +9,6 @@ import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
 import ru.babobka.vsjws.util.TextUtil;
 import ru.babobka.vsjws.webcontroller.WebController;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -24,17 +23,15 @@ import java.util.logging.Level;
  */
 public class WebServer {
 
-	public final Map<String, WebController> controllerHashMap = new ConcurrentHashMap<>();
+	private final Map<String, WebController> controllerMap = new ConcurrentHashMap<>();
+
+	private final Map<String, OnExceptionListener> exceptionListenerMap = new ConcurrentHashMap<>();
 
 	private final String name;
 
 	private volatile OnServerStartListener onServerStartListener;
 
-	private volatile OnExceptionListener onExceptionListener;
-
 	private volatile ServerSocket ss;
-
-	private final String webContentFolder;
 
 	private static final int DEFAULT_SESSION_TIME_OUT_SEC = 900;
 
@@ -46,7 +43,7 @@ public class WebServer {
 
 	private static final int BACKLOG = 25;
 
-	private volatile boolean running = false;
+	private volatile boolean running;
 
 	private final HttpSession httpSession;
 
@@ -60,12 +57,11 @@ public class WebServer {
 
 	private final int port;
 
-	public WebServer(String name, int port, String webContentFolder, String logFolder) throws IOException {
-		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, webContentFolder, logFolder);
+	public WebServer(String name, int port, String logFolder) throws IOException {
+		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, logFolder);
 	}
 
-	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String webContentFolder, String logFolder)
-			throws IOException {
+	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String logFolder) throws IOException {
 		if (port < 0 || port > MAX_PORT) {
 			throw new IllegalArgumentException("Port must be in range [0;" + MAX_PORT + ")");
 		}
@@ -80,16 +76,10 @@ public class WebServer {
 		if (logFolder == null) {
 			throw new IllegalArgumentException("Log folder is null");
 		}
-		if (webContentFolder != null) {
-			File folder = new File(webContentFolder);
-			if (!folder.exists()) {
-				folder.mkdirs();
-			}
 
-		}
 		logger = new SimpleLogger(name + ":" + port, logFolder, name);
 		this.name = name;
-		this.webContentFolder = webContentFolder;
+
 		this.sessionTimeOutSeconds = sessionTimeOutSeconds;
 		this.logFolder = logFolder;
 		this.port = port;
@@ -101,7 +91,6 @@ public class WebServer {
 
 		logger.log(Level.INFO, "Web server name:\t" + getFullName());
 		logger.log(Level.INFO, "Web server log folder:\t" + logFolder);
-		logger.log(Level.INFO, "Web server content folder:\t" + webContentFolder);
 	}
 
 	public OnServerStartListener getOnServerStartListener() {
@@ -110,14 +99,10 @@ public class WebServer {
 
 	public void addController(String uri, WebController webController) {
 		if (uri.startsWith("/")) {
-			controllerHashMap.put(uri, webController);
+			controllerMap.put(uri, webController);
 		} else {
-			controllerHashMap.put("/" + uri, webController);
+			controllerMap.put("/" + uri, webController);
 		}
-	}
-
-	public String getWebContentFolder() {
-		return webContentFolder;
 	}
 
 	public int getSessionTimeOutSeconds() {
@@ -146,8 +131,8 @@ public class WebServer {
 				try {
 					Socket s = localServerSocket.accept();
 					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
-					threadPool.execute(new SocketProcessorRunnable(s, controllerHashMap, httpSession, logger,
-							webContentFolder, onExceptionListener));
+					threadPool.execute(
+							new SocketProcessorRunnable(s, controllerMap, httpSession, logger, exceptionListenerMap));
 				} catch (IOException e) {
 					if (running && !localServerSocket.isClosed()) {
 						logger.log(e);
@@ -202,12 +187,10 @@ public class WebServer {
 		return logger;
 	}
 
-	public OnExceptionListener getOnExceptionListener() {
-		return onExceptionListener;
-	}
-
-	public void setOnExceptionListener(OnExceptionListener onExceptionListener) {
-		this.onExceptionListener = onExceptionListener;
+	public Map<String, OnExceptionListener> addExceptionListener(Class<?> exceptionClass,
+			OnExceptionListener onExceptionListener) {
+		this.exceptionListenerMap.put(exceptionClass.getName(), onExceptionListener);
+		return exceptionListenerMap;
 	}
 
 	public void setOnServerStartListener(OnServerStartListener onServerStartListener) {

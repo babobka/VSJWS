@@ -3,6 +3,7 @@ package ru.babobka.vsjws.model;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -44,6 +45,20 @@ public class HttpResponseTest {
 		assertEquals(response.getResponseCode(), HttpResponse.ResponseCode.OK);
 		assertNull(response.getContent());
 		assertNotNull(response.getFile());
+	}
+
+	@Test
+	public void testResourceResponse() throws IOException {
+
+		HttpResponse response = HttpResponse.resourceResponse("test.txt");
+		assertEquals(response.getResponseCode(), HttpResponse.ResponseCode.OK);
+		try {
+			response = HttpResponse.resourceResponse("test1.txt");
+			fail();
+		} catch (FileNotFoundException e) {
+
+		}
+
 	}
 
 	@Test
