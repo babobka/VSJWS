@@ -16,12 +16,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
 
 /**
  * Created by dolgopolov.a on 30.12.15.
  */
-public class WebServer {
+public class WebServer extends Thread {
 
 	private final Map<String, WebController> controllerMap = new ConcurrentHashMap<>();
 
@@ -42,8 +41,6 @@ public class WebServer {
 	private static final int THREAD_POOL_SIZE = 10;
 
 	private static final int BACKLOG = 25;
-
-	private volatile boolean running;
 
 	private final HttpSession httpSession;
 
@@ -89,8 +86,8 @@ public class WebServer {
 			this.httpSession = new HttpSession(sessionTimeOutSeconds);
 		}
 
-		logger.log(Level.INFO, "Web server name:\t" + getFullName());
-		logger.log(Level.INFO, "Web server log folder:\t" + logFolder);
+		logger.log("Web server name:\t" + getFullName());
+		logger.log("Web server log folder:\t" + logFolder);
 	}
 
 	public OnServerStartListener getOnServerStartListener() {
@@ -113,28 +110,25 @@ public class WebServer {
 		return logFolder;
 	}
 
-	void run() throws IOException {
-		running = true;
+	public void run() {
 		ServerSocket localServerSocket = null;
 		try {
 			ss = new ServerSocket(port, BACKLOG);
-
-			localServerSocket = ss;
-			logger.log(Level.INFO, "Running server " + getFullName());
+			logger.log("Run server " + getFullName());
 			threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 			OnServerStartListener listener = onServerStartListener;
 			if (listener != null) {
 				listener.onStart(name, port);
 			}
-
-			while (running) {
+			localServerSocket = ss;
+			while (!Thread.currentThread().isInterrupted()) {
 				try {
 					Socket s = localServerSocket.accept();
 					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 					threadPool.execute(
 							new SocketProcessorRunnable(s, controllerMap, httpSession, logger, exceptionListenerMap));
 				} catch (IOException e) {
-					if (running && !localServerSocket.isClosed()) {
+					if (!localServerSocket.isClosed()) {
 						logger.log(e);
 					} else {
 						threadPool.shutdown();
@@ -143,15 +137,16 @@ public class WebServer {
 				}
 
 			}
+		} catch (IOException e) {
+			logger.log(e);
 		} finally {
-			stop();
+			clear();
 
 		}
-		logger.log(Level.INFO, "Server " + getFullName() + " is done");
+		logger.log("Server " + getFullName() + " is done");
 	}
 
-	void stop() {
-		running = false;
+	private void clear() {
 		ExecutorService localThreadPool = this.threadPool;
 		if (localThreadPool != null) {
 			localThreadPool.shutdown();
@@ -164,6 +159,14 @@ public class WebServer {
 		} catch (IOException e) {
 			logger.log(e);
 		}
+		controllerMap.clear();
+		exceptionListenerMap.clear();
+	}
+
+	@Override
+	public void interrupt() {
+		super.interrupt();
+		clear();
 
 	}
 
@@ -179,10 +182,6 @@ public class WebServer {
 		return httpSession;
 	}
 
-	public String getName() {
-		return name;
-	}
-
 	public SimpleLogger getLogger() {
 		return logger;
 	}
@@ -195,10 +194,6 @@ public class WebServer {
 
 	public void setOnServerStartListener(OnServerStartListener onServerStartListener) {
 		this.onServerStartListener = onServerStartListener;
-	}
-
-	public boolean isRunning() {
-		return running;
 	}
 
 }
