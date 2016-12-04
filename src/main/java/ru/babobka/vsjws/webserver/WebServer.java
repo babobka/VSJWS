@@ -4,10 +4,11 @@ import ru.babobka.vsjws.constant.RegularExpressions;
 import ru.babobka.vsjws.listener.OnExceptionListener;
 import ru.babobka.vsjws.listener.OnServerStartListener;
 import ru.babobka.vsjws.logger.SimpleLogger;
+
 import ru.babobka.vsjws.model.HttpSession;
 import ru.babobka.vsjws.runnable.SocketProcessorRunnable;
+import ru.babobka.vsjws.runnable.WebController;
 import ru.babobka.vsjws.util.TextUtil;
-import ru.babobka.vsjws.webcontroller.WebController;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 
 /**
  * Created by dolgopolov.a on 30.12.15.
@@ -36,6 +38,8 @@ public class WebServer extends Thread {
 
 	private static final int SOCKET_READ_TIMEOUT_MILLIS = 2000;
 
+	private volatile boolean debugMode;
+
 	private static final int MAX_PORT = 65536;
 
 	private static final int THREAD_POOL_SIZE = 10;
@@ -55,10 +59,11 @@ public class WebServer extends Thread {
 	private final int port;
 
 	public WebServer(String name, int port, String logFolder) throws IOException {
-		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, logFolder);
+		this(name, port, DEFAULT_SESSION_TIME_OUT_SEC, logFolder, false);
 	}
 
-	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String logFolder) throws IOException {
+	public WebServer(String name, int port, Integer sessionTimeOutSeconds, String logFolder, boolean debugMode)
+			throws IOException {
 		if (port < 0 || port > MAX_PORT) {
 			throw new IllegalArgumentException("Port must be in range [0;" + MAX_PORT + ")");
 		}
@@ -80,6 +85,7 @@ public class WebServer extends Thread {
 		this.sessionTimeOutSeconds = sessionTimeOutSeconds;
 		this.logFolder = logFolder;
 		this.port = port;
+		this.debugMode = debugMode;
 		if (sessionTimeOutSeconds == null) {
 			this.httpSession = new HttpSession(DEFAULT_SESSION_TIME_OUT_SEC);
 		} else {
@@ -88,6 +94,10 @@ public class WebServer extends Thread {
 
 		logger.log("Web server name:\t" + getFullName());
 		logger.log("Web server log folder:\t" + logFolder);
+		if (debugMode) {
+			logger.log(Level.WARNING, "Debug mode is on");
+		}
+		this.ss = new ServerSocket(port, BACKLOG);
 	}
 
 	public OnServerStartListener getOnServerStartListener() {
@@ -113,7 +123,6 @@ public class WebServer extends Thread {
 	public void run() {
 		ServerSocket localServerSocket = null;
 		try {
-			ss = new ServerSocket(port, BACKLOG);
 			logger.log("Run server " + getFullName());
 			threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 			OnServerStartListener listener = onServerStartListener;
@@ -125,8 +134,8 @@ public class WebServer extends Thread {
 				try {
 					Socket s = localServerSocket.accept();
 					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
-					threadPool.execute(
-							new SocketProcessorRunnable(s, controllerMap, httpSession, logger, exceptionListenerMap));
+					threadPool.execute(new SocketProcessorRunnable(s, controllerMap, httpSession, logger,
+							exceptionListenerMap, debugMode));
 				} catch (IOException e) {
 					if (!localServerSocket.isClosed()) {
 						logger.log(e);
@@ -137,8 +146,6 @@ public class WebServer extends Thread {
 				}
 
 			}
-		} catch (IOException e) {
-			logger.log(e);
 		} finally {
 			clear();
 
@@ -186,7 +193,15 @@ public class WebServer extends Thread {
 		return logger;
 	}
 
-	public Map<String, OnExceptionListener> addExceptionListener(Class<?> exceptionClass,
+	public boolean isDebugMode() {
+		return debugMode;
+	}
+
+	public void setDebugMode(boolean debugMode) {
+		this.debugMode = debugMode;
+	}
+
+	public Map<String, OnExceptionListener> addExceptionListener(Class<? extends Exception> exceptionClass,
 			OnExceptionListener onExceptionListener) {
 		this.exceptionListenerMap.put(exceptionClass.getName(), onExceptionListener);
 		return exceptionListenerMap;

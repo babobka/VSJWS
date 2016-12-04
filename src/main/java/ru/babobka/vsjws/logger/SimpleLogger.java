@@ -25,6 +25,10 @@ public class SimpleLogger {
 		logger.log(level, getStringFromException(e));
 	}
 
+	public void log(Object o) {
+		logger.log(Level.INFO, o.toString());
+	}
+
 	public void log(String message) {
 		logger.log(Level.INFO, message);
 	}

@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.nio.charset.Charset;
+import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -22,6 +24,12 @@ import org.apache.tika.io.IOUtils;
 import org.json.JSONObject;
 
 import com.google.gson.Gson;
+import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.Converter;
+import com.thoughtworks.xstream.converters.MarshallingContext;
+import com.thoughtworks.xstream.converters.UnmarshallingContext;
+import com.thoughtworks.xstream.io.HierarchicalStreamReader;
+import com.thoughtworks.xstream.io.HierarchicalStreamWriter;
 
 import ru.babobka.vsjws.constant.ContentType;
 import ru.babobka.vsjws.constant.RegularExpressions;
@@ -248,6 +256,18 @@ public class HttpResponse {
 		return xmlResponse(xml, ResponseCode.OK);
 	}
 
+	public static HttpResponse xsltResponse(Map<String, Serializable> map, String xslFileName) throws IOException {
+		return xsltResponse(map, xslFileName, ResponseCode.OK);
+	}
+
+	public static HttpResponse xsltResponse(Map<String, Serializable> map, String xslFileName, ResponseCode code)
+			throws IOException {
+		XStream stream = new XStream();
+		stream.registerConverter(new MapEntryConverter());
+		stream.alias("root", Map.class);
+		return xsltResponse(stream.toXML(map), xslFileName, code);
+	}
+
 	public static HttpResponse xsltResponse(String xml, String xslFileName) throws IOException {
 		return xsltResponse(xml, xslFileName, ResponseCode.OK);
 	}
@@ -320,11 +340,25 @@ public class HttpResponse {
 	}
 
 	public static HttpResponse exceptionResponse(Exception e, ResponseCode code) {
-		return textResponse(TextUtil.getStringFromException(e), code, ContentType.PLAIN);
+		return exceptionResponse(e, code, false);
+	}
+
+	public static HttpResponse exceptionResponse(Exception e, ResponseCode code, boolean debugMode) {
+		String text;
+		if (!debugMode) {
+			text = e.getClass().getName();
+		} else {
+			text = TextUtil.getStringFromException(e);
+		}
+		return textResponse(text, code, ContentType.PLAIN);
+	}
+
+	public static HttpResponse exceptionResponse(Exception e, boolean debugMode) {
+		return exceptionResponse(e, ResponseCode.INTERNAL_SERVER_ERROR, debugMode);
 	}
 
 	public static HttpResponse exceptionResponse(Exception e) {
-		return exceptionResponse(e, ResponseCode.INTERNAL_SERVER_ERROR);
+		return exceptionResponse(e, false);
 	}
 
 	public static HttpResponse textResponse(String content, String contentType) {
@@ -366,6 +400,48 @@ public class HttpResponse {
 
 	public Map<String, String> getOtherHeaders() {
 		return otherHeaders;
+	}
+
+	public static class MapEntryConverter implements Converter {
+
+		@Override
+		public boolean canConvert(Class clazz) {
+			return AbstractMap.class.isAssignableFrom(clazz);
+		}
+
+		public void marshal(Object value, HierarchicalStreamWriter writer, MarshallingContext context) {
+
+			AbstractMap<?, ?> map = (AbstractMap<?, ?>) value;
+			for (Object obj : map.entrySet()) {
+				Map.Entry<?, ?> entry = (Map.Entry<?, ?>) obj;
+				writer.startNode(entry.getKey().toString());
+				Object val = entry.getValue();
+				if (null != val) {
+					writer.setValue(val.toString());
+				}
+				writer.endNode();
+			}
+
+		}
+
+		public Object unmarshal(HierarchicalStreamReader reader, UnmarshallingContext context) {
+
+			Map<String, String> map = new HashMap<>();
+
+			while (reader.hasMoreChildren()) {
+				reader.moveDown();
+
+				String key = reader.getNodeName(); // nodeName aka element's
+													// name
+				String value = reader.getValue();
+				map.put(key, value);
+
+				reader.moveUp();
+			}
+
+			return map;
+		}
+
 	}
 
 }

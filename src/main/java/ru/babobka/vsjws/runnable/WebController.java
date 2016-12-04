@@ -1,4 +1,4 @@
-package ru.babobka.vsjws.webcontroller;
+package ru.babobka.vsjws.runnable;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -7,6 +7,7 @@ import java.util.ListIterator;
 import ru.babobka.vsjws.constant.Method;
 import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
+import ru.babobka.vsjws.webcontroller.WebFilter;
 
 /**
  * Created by dolgopolov.a on 30.12.15.
@@ -20,7 +21,7 @@ public class WebController {
 		return this;
 	}
 
-	public final HttpResponse control(HttpRequest request) throws Exception {
+	final  HttpResponse control(HttpRequest request) throws Exception {
 
 		ListIterator<WebFilter> li = webFilters.listIterator(webFilters.size());
 		HttpResponse response = null;
@@ -64,27 +65,28 @@ public class WebController {
 		return response;
 	}
 
-	public HttpResponse onHead(HttpRequest request) throws Exception {
+	public  HttpResponse onHead(HttpRequest request) throws Exception {
 		return HttpResponse.NOT_IMPLEMENTED_RESPONSE;
 	}
 
-	public HttpResponse onGet(HttpRequest request) throws Exception {
+	public  HttpResponse onGet(HttpRequest request) throws Exception {
 		return HttpResponse.NOT_IMPLEMENTED_RESPONSE;
 	}
 
-	public HttpResponse onPost(HttpRequest request) throws Exception {
+	public  HttpResponse onPost(HttpRequest request) throws Exception {
 		return HttpResponse.NOT_IMPLEMENTED_RESPONSE;
 	}
 
-	public HttpResponse onPut(HttpRequest request) throws Exception {
+	public  HttpResponse onPut(HttpRequest request) throws Exception {
 		return HttpResponse.NOT_IMPLEMENTED_RESPONSE;
 	}
 
-	public HttpResponse onPatch(HttpRequest request) throws Exception {
+	public  HttpResponse onPatch(HttpRequest request) throws Exception {
 		return HttpResponse.NOT_IMPLEMENTED_RESPONSE;
 	}
 
-	public HttpResponse onDelete(HttpRequest request) throws Exception {
+	public  HttpResponse onDelete(HttpRequest request) throws Exception {
 		return HttpResponse.NOT_IMPLEMENTED_RESPONSE;
 	}
+
 }

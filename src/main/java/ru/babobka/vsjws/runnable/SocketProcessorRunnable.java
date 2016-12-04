@@ -9,16 +9,15 @@ import ru.babobka.vsjws.model.HttpRequest;
 import ru.babobka.vsjws.model.HttpResponse;
 import ru.babobka.vsjws.model.HttpResponse.ResponseCode;
 import ru.babobka.vsjws.model.HttpSession;
+
 import ru.babobka.vsjws.model.RawHttpRequest;
 import ru.babobka.vsjws.util.HttpUtil;
 import ru.babobka.vsjws.webcontroller.StaticResourcesController;
-import ru.babobka.vsjws.webcontroller.WebController;
 
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -32,15 +31,19 @@ public class SocketProcessorRunnable implements Runnable {
 	private final Map<String, OnExceptionListener> exceptionListenerMap;
 	private final SimpleLogger logger;
 	private final StaticResourcesController staticResourcesController;
+	private final boolean debugMode;
 
 	public SocketProcessorRunnable(Socket s, Map<String, WebController> controllerMap, HttpSession httpSession,
-			SimpleLogger logger, Map<String, OnExceptionListener> exceptionListenerMap) throws IOException {
+			SimpleLogger logger, Map<String, OnExceptionListener> exceptionListenerMap, boolean debugMode)
+			throws IOException {
 		this.s = s;
 		this.httpSession = httpSession;
 		this.controllerMap = controllerMap;
+
 		this.exceptionListenerMap = exceptionListenerMap;
 		this.logger = logger;
 		this.staticResourcesController = new StaticResourcesController();
+		this.debugMode = debugMode;
 
 	}
 
@@ -66,36 +69,37 @@ public class SocketProcessorRunnable implements Runnable {
 				}
 				WebController webController;
 				if (cleanedUri.startsWith("/web-content")) {
-					webController = staticResourcesController;
-					response = webController.onGet(request);
+					response = staticResourcesController.onGet(request);
 				} else if ((webController = controllerMap.get(cleanedUri)) != null) {
 					response = webController.control(request);
 				}
 
 			}
 		} catch (BadProtocolSpecifiedException e) {
-			response = HttpResponse.exceptionResponse(e, ResponseCode.HTTP_VERSION_NOT_SUPPORTED);
+			response = HttpResponse.exceptionResponse(e, ResponseCode.HTTP_VERSION_NOT_SUPPORTED, debugMode);
 		} catch (InvalidContentLengthException e) {
-			response = HttpResponse.exceptionResponse(e, ResponseCode.LENGTH_REQUIRED);
+			response = HttpResponse.exceptionResponse(e, ResponseCode.LENGTH_REQUIRED, debugMode);
 		} catch (IllegalArgumentException e) {
-			response = HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST);
+			response = HttpResponse.exceptionResponse(e, ResponseCode.BAD_REQUEST, debugMode);
 		} catch (SocketTimeoutException e) {
-			response = HttpResponse.exceptionResponse(e, ResponseCode.REQUEST_TIMEOUT);
+			response = HttpResponse.exceptionResponse(e, ResponseCode.REQUEST_TIMEOUT, debugMode);
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, e);
 			OnExceptionListener onExceptionListener = exceptionListenerMap.get(e.getClass().getName());
 			if (onExceptionListener != null) {
+				
 				try {
+				
 					response = onExceptionListener.onException(e);
 					if (response == null) {
-						response = HttpResponse.exceptionResponse(e);
+						response = HttpResponse.exceptionResponse(e, debugMode);
 					}
 				} catch (Exception e1) {
 					logger.log(Level.SEVERE, e1);
-					response = HttpResponse.exceptionResponse(e1);
+					response = HttpResponse.exceptionResponse(e1, debugMode);
 				}
 			} else {
-				response = HttpResponse.exceptionResponse(e);
+				response = HttpResponse.exceptionResponse(e, debugMode);
 			}
 		} finally {
 			try {

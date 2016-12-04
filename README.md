@@ -48,8 +48,7 @@ SocketProcessorRunnable determines what web controller must process a given requ
 		webServer.addController("cookies", new CookieTestController());
 		webServer.addController("redirect", new RedirectTestController());
 		webServer.addController("", new MainPageController());
-		WebServerExecutor executor = new WebServerExecutor(webServer);
-		executor.run();
+		webServer.start
 	}
 
 ```
