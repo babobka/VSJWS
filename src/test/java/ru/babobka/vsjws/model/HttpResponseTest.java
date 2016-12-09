@@ -43,7 +43,7 @@ public class HttpResponseTest {
 		File currentJavaFile = new File("pom.xml");
 		HttpResponse response = HttpResponse.fileResponse(currentJavaFile);
 		assertEquals(response.getResponseCode(), HttpResponse.ResponseCode.OK);
-		assertNull(response.getContent());
+		assertEquals(response.getContent().length,0);
 		assertNotNull(response.getFile());
 	}
 
@@ -53,7 +53,7 @@ public class HttpResponseTest {
 		HttpResponse response = HttpResponse.resourceResponse("test.txt");
 		assertEquals(response.getResponseCode(), HttpResponse.ResponseCode.OK);
 		try {
-			response = HttpResponse.resourceResponse("test1.txt");
+			HttpResponse.resourceResponse("test1.txt");
 			fail();
 		} catch (FileNotFoundException e) {
 
@@ -99,9 +99,9 @@ public class HttpResponseTest {
 
 	@Test
 	public void testJsonNullResponse() {
-		Object object = null;
+		
 		try {
-			HttpResponse.jsonResponse(object);
+			HttpResponse.jsonResponse(null);
 			fail();
 		} catch (IllegalArgumentException e) {
 

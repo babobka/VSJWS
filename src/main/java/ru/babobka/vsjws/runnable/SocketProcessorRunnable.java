@@ -103,7 +103,6 @@ public class SocketProcessorRunnable implements Runnable {
 			}
 		} finally {
 			try {
-
 				HttpUtil.writeResponse(s.getOutputStream(), response, noContent);
 			} catch (IOException e1) {
 				logger.log(Level.SEVERE, e1);

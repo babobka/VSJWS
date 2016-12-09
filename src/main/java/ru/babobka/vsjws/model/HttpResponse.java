@@ -162,7 +162,10 @@ public class HttpResponse {
 		super();
 		this.responseCode = code;
 		this.contentType = contentType;
-		this.content = content;
+		if (content != null)
+			this.content = content.clone();
+		else
+			this.content = null;
 		this.file = file;
 		this.contentLength = contentLength;
 	}
@@ -236,7 +239,7 @@ public class HttpResponse {
 		if (object == null) {
 			throw new IllegalArgumentException("JSON object can not be null");
 		} else {
-			return textResponse(GSON.toJson(object).toString(), code, ContentType.JSON);
+			return textResponse(GSON.toJson(object), code, ContentType.JSON);
 		}
 	}
 
@@ -245,6 +248,10 @@ public class HttpResponse {
 	}
 
 	public static HttpResponse jsonResponse(String json) {
+		if(json==null)
+		{
+			throw new IllegalArgumentException();
+		}
 		return jsonResponse(new JSONObject(json));
 	}
 
@@ -322,6 +329,9 @@ public class HttpResponse {
 	}
 
 	public static HttpResponse textResponse(String content, ResponseCode code, String contentType) {
+		if (content == null) {
+			throw new IllegalArgumentException();
+		}
 		byte[] bytes = content.getBytes(MAIN_ENCODING);
 		return new HttpResponse(code, contentType, bytes, null, bytes.length);
 	}
@@ -387,7 +397,9 @@ public class HttpResponse {
 	}
 
 	public byte[] getContent() {
-		return content;
+		if (content != null)
+			return content.clone();
+		return new byte[0];
 	}
 
 	public long getContentLength() {

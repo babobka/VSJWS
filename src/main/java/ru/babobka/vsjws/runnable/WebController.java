@@ -31,6 +31,7 @@ public class WebController {
 				break;
 			}
 		}
+		
 		if (response == null) {
 			switch (request.getMethod()) {
 			case Method.GET:

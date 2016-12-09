@@ -18,62 +18,44 @@ import ru.babobka.vsjws.model.HttpResponse;
  */
 public interface HttpUtil {
 
-	public static void writeResponse(OutputStream os, HttpResponse response, boolean noContent) throws IOException  {
-		try {
-			if (response != null) {
-				StringBuilder headerBuilder = new StringBuilder(
-						HttpRequest.PROTOCOL + " " + response.getResponseCode() + "\n");
-				Map<String, String> headers = new LinkedHashMap<>();
-				headers.put(HttpResponse.RestrictedHeader.SERVER + ":", "vsjws");
-				headers.put(HttpResponse.RestrictedHeader.CONTENT_TYPE + ":", response.getContentType());
-				headers.put(HttpResponse.RestrictedHeader.CONTENT_LENGTH + ":",
-						String.valueOf(response.getContentLength()));
-				headers.put(HttpResponse.RestrictedHeader.CONNECTION + ":", "close");
-				headers.putAll(response.getHttpCookieHeaders());
-				headers.putAll(response.getOtherHeaders());
-				for (Map.Entry<String, String> entry : headers.entrySet()) {
-					headerBuilder.append(entry.getKey());
-					headerBuilder.append(" ");
-					headerBuilder.append(entry.getValue());
-					headerBuilder.append("\r\n");
-				}
-
+	public static void writeResponse(OutputStream os, HttpResponse response, boolean noContent) throws IOException {
+		if (response != null) {
+			StringBuilder headerBuilder = new StringBuilder(
+					HttpRequest.PROTOCOL + " " + response.getResponseCode() + "\n");
+			Map<String, String> headers = new LinkedHashMap<>();
+			headers.put(HttpResponse.RestrictedHeader.SERVER + ":", "vsjws");
+			headers.put(HttpResponse.RestrictedHeader.CONTENT_TYPE + ":", response.getContentType());
+			headers.put(HttpResponse.RestrictedHeader.CONTENT_LENGTH + ":",
+					String.valueOf(response.getContentLength()));
+			headers.put(HttpResponse.RestrictedHeader.CONNECTION + ":", "close");
+			headers.putAll(response.getHttpCookieHeaders());
+			headers.putAll(response.getOtherHeaders());
+			for (Map.Entry<String, String> entry : headers.entrySet()) {
+				headerBuilder.append(entry.getKey());
+				headerBuilder.append(" ");
+				headerBuilder.append(entry.getValue());
 				headerBuilder.append("\r\n");
-				os.write(headerBuilder.toString().getBytes(HttpResponse.MAIN_ENCODING));
-				if (!noContent) {
-					if (response.getFile() != null) {
-						byte[] buf = new byte[8192];
-						int c;
-						InputStream is = null;
-						try {
-							is = new FileInputStream(response.getFile());
-							while ((c = is.read(buf, 0, buf.length)) > 0) {
-								os.write(buf, 0, c);
-								os.flush();
-							}
-						} finally {
-							if (is != null) {
-								try {
-									is.close();
-								} catch (IOException e) {
-									e.printStackTrace();
-								}
-							}
-						}
-					} else {
-						// java.net.SocketException: Broken pipe
-						os.write(response.getContent());
-					}
-				}
 			}
-			os.flush();
-		} finally {
-			try {
-				os.close();
-			} catch (IOException e) {
-				e.printStackTrace();
+
+			headerBuilder.append("\r\n");
+			os.write(headerBuilder.toString().getBytes(HttpResponse.MAIN_ENCODING));
+			if (!noContent) {
+				if (response.getFile() != null) {
+					byte[] buf = new byte[8192];
+					int c;
+					try (InputStream is = new FileInputStream(response.getFile())) {
+						while ((c = is.read(buf, 0, buf.length)) > 0) {
+							os.write(buf, 0, c);
+							os.flush();
+						}
+					}
+				} else {
+					os.write(response.getContent());
+				}
 			}
 		}
+		os.flush();
+
 	}
 
 	public static Map<String, String> getUriParams(String uri) {

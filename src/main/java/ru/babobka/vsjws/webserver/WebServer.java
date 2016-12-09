@@ -32,7 +32,7 @@ public class WebServer extends Thread {
 
 	private volatile OnServerStartListener onServerStartListener;
 
-	private volatile ServerSocket ss;
+	private final ServerSocket ss;
 
 	private static final int DEFAULT_SESSION_TIME_OUT_SEC = 900;
 
@@ -54,7 +54,7 @@ public class WebServer extends Thread {
 
 	private final SimpleLogger logger;
 
-	private volatile ExecutorService threadPool;
+	private final ExecutorService threadPool;
 
 	private final int port;
 
@@ -97,6 +97,7 @@ public class WebServer extends Thread {
 		if (debugMode) {
 			logger.log(Level.WARNING, "Debug mode is on");
 		}
+		threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 		this.ss = new ServerSocket(port, BACKLOG);
 	}
 
@@ -121,26 +122,25 @@ public class WebServer extends Thread {
 	}
 
 	public void run() {
-		ServerSocket localServerSocket = null;
 		try {
 			logger.log("Run server " + getFullName());
-			threadPool = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
+
 			OnServerStartListener listener = onServerStartListener;
 			if (listener != null) {
 				listener.onStart(name, port);
 			}
-			localServerSocket = ss;
+
 			while (!Thread.currentThread().isInterrupted()) {
 				try {
-					Socket s = localServerSocket.accept();
+					Socket s = ss.accept();
 					s.setSoTimeout(SOCKET_READ_TIMEOUT_MILLIS);
 					threadPool.execute(new SocketProcessorRunnable(s, controllerMap, httpSession, logger,
 							exceptionListenerMap, debugMode));
 				} catch (IOException e) {
-					if (!localServerSocket.isClosed()) {
+					if (!ss.isClosed()) {
 						logger.log(e);
 					} else {
-						threadPool.shutdown();
+						threadPool.shutdownNow();
 						break;
 					}
 				}
@@ -154,15 +154,9 @@ public class WebServer extends Thread {
 	}
 
 	private void clear() {
-		ExecutorService localThreadPool = this.threadPool;
-		if (localThreadPool != null) {
-			localThreadPool.shutdown();
-		}
+		threadPool.shutdownNow();
 		try {
-			ServerSocket localServerSocket = this.ss;
-			if (localServerSocket != null && !localServerSocket.isClosed()) {
-				localServerSocket.close();
-			}
+			ss.close();
 		} catch (IOException e) {
 			logger.log(e);
 		}
